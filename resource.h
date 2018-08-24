@@ -150,9 +150,10 @@
 #define IDC_CHECK_AUTO                  1074
 #define IDC_CHECK_RECV                  1075
 #define IDC_CHECK_SEND                  1076
-#define IDC_CHECK_RECV2                 1077
 #define IDC_CHECK_UDP                   1077
 #define IDC_CHECK_TCP                   1078
+#define IDC_BUTTON2                     1079
+#define IDC_SETGAME                     1079
 #define ID_HARIKRISHNA                  32771
 #define MENU_START                      32771
 #define MENU_STOP                       32772
@@ -221,7 +222,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        298
 #define _APS_NEXT_COMMAND_VALUE         32845
-#define _APS_NEXT_CONTROL_VALUE         1075
+#define _APS_NEXT_CONTROL_VALUE         1080
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

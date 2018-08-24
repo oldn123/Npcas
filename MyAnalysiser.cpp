@@ -70,6 +70,9 @@ bool CMyAnalysiser::OnPackageCome(int nPackageType, PacketInformation* pi, RAW_P
 	bool btcp = IsTcpPackage(pPacket);
 	bool budp = btcp ? false : IsUdpPackage(pPacket);
 
+	bool bsendmode = m_myAddr == pi->SourceAddr;
+	bool brecvmode = m_myAddr == pi->DestinationAddr;
+
 	if (m_bUdp && !budp)
 	{
 		if (!m_bTcp)
@@ -87,7 +90,7 @@ bool CMyAnalysiser::OnPackageCome(int nPackageType, PacketInformation* pi, RAW_P
 
 	if (m_bSend || m_bRecv)
 	{
-		if (m_bSend && m_myAddr != pi->SourceAddr)
+		if (m_bSend && !bsendmode)
 		{
 			if (!m_bRecv)
 			{
@@ -95,7 +98,7 @@ bool CMyAnalysiser::OnPackageCome(int nPackageType, PacketInformation* pi, RAW_P
 			}
 		}
 
-		if (m_bRecv && m_myAddr != pi->DestinationAddr)
+		if (m_bRecv && !brecvmode)
 		{
 			if (!m_bSend)
 			{
@@ -108,17 +111,61 @@ bool CMyAnalysiser::OnPackageCome(int nPackageType, PacketInformation* pi, RAW_P
 	{
 		if (budp)
 		{
-			if (!m_monitorPorts_udp.count(atoi(pi->DestinationPort)))
+			if (bsendmode)
+			{
+				int port1 = atoi(pi->SourcePort);
+				if (!m_monitorPorts_udp.count(port1))
+				{
+					return false;
+				}
+				else
+				{
+					if (!m_monitorPorts_udp[port1])
+					{
+						return false;
+					}
+				}
+			}
+			else if (brecvmode)
+			{
+				int port1 = atoi(pi->DestinationPort);
+				if (!m_monitorPorts_udp.count(port1))
+				{
+					return false;
+				}
+				else
+				{
+					if (!m_monitorPorts_udp[port1])
+					{
+						return false;
+					}
+				}
+			}
+			else
 			{
 				return false;
 			}
 		}
 		else if (btcp)
 		{
-			if (!m_monitorPorts_tcp.count(atoi(pi->DestinationPort)))
+			if (bsendmode)
+			{
+				if (!m_monitorPorts_tcp.count(atoi(pi->SourcePort)))
+				{
+					return false;
+				}
+			}
+			else if (brecvmode)
+			{
+				if (!m_monitorPorts_tcp.count(atoi(pi->DestinationPort)))
+				{
+					return false;
+				}
+			}
+			else
 			{
 				return false;
-			}
+			}	
 		}	
 		else
 		{
@@ -190,7 +237,7 @@ void CMyAnalysiser::SetMonitorProcess(const char * processname)
 			{
 				break;
 			}
-			m_monitorPorts_tcp.insert(ports[i]);
+			m_monitorPorts_tcp[ports[i]] = true;
 		}
 	}
 	
@@ -205,7 +252,7 @@ void CMyAnalysiser::SetMonitorProcess(const char * processname)
 			{
 				break;
 			}
-			m_monitorPorts_udp.insert(ports[i]);
+			m_monitorPorts_udp[ports[i]] = true;
 		}
 	}
 }

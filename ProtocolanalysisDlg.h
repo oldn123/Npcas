@@ -12,6 +12,9 @@
 #include "resource.h"
 #include "sniffer.h"
 #include "pcap.h"
+#include <set>
+#include <map>
+using namespace std;
 class CProtocolAnalysisDlg : public CDialog
 {
 	
@@ -48,10 +51,13 @@ public:
 	CTabCtrl	m_tab1;
 	CListCtrl	m_list_common;
 	//}}AFX_DATA
-	
+	map<CButton*, int> m_checkboxSet;
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CProtocolAnalysisDlg)
 protected:
+	map<DWORD,bool> * m_portCtrlMap;
+	void	ViewPorts();
+	void	ResetPorts(map<DWORD,bool> & );
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 	virtual LRESULT DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam);
 	//}}AFX_VIRTUAL
@@ -97,6 +103,7 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg void OnButtonStart();
 	afx_msg void OnButtonStop();
+	afx_msg void OnBtnCommandRange(UINT);
 	afx_msg LRESULT  OnPacket(WPARAM wParam, LPARAM lParam);//
 	afx_msg LRESULT  OnArp(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT  OnIp(WPARAM wParam, LPARAM lParam);
@@ -171,6 +178,7 @@ public:
 	afx_msg void OnBnClickedCheckAuto();
 	afx_msg void OnBnClickedCheckTcp();
 	afx_msg void OnBnClickedCheckUdp();
+	afx_msg void OnBnClickedSetgame();
 };
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.

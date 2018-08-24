@@ -2,6 +2,7 @@
 
 #include "sniffer.h"
 #include <string>
+#include <map>
 #include <set>
 using namespace std;
 
@@ -25,6 +26,7 @@ public:
 	bool	IsDstIpInIgnore(const char * ip);
 
 	void	SetMonitorProcess(const char *);
+	map<DWORD,bool> * GetPortMap(bool bUdp){return bUdp ? &m_monitorPorts_udp : &m_monitorPorts_tcp; }
 
 	void	SetPackageType(bool bTcp, bool bUdp){m_bTcp = bTcp; m_bUdp = bUdp;}
 	void	SetPackageDir(bool bSend, bool bRecv){m_bSend = bSend; m_bRecv = bRecv;}
@@ -37,8 +39,8 @@ protected:
 	set<string>				m_ignoreDestIp;
 	set<string>				m_ignoreSrcIp;
 
-	set<DWORD>				m_monitorPorts_tcp;
-	set<DWORD>				m_monitorPorts_udp;
+	map<DWORD,bool>			m_monitorPorts_tcp;
+	map<DWORD,bool>			m_monitorPorts_udp;
 
 	bool					m_bMonitorPort;
 	bool					m_bSend;

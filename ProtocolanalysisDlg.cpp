@@ -42,6 +42,7 @@ SKINH_ATTACHEX pSkinFun = (SKINH_ATTACHEX)::GetProcAddress(LoadLibrary("config\\
 // CProtocolAnalysisDlg dialog
 CProtocolAnalysisDlg::CProtocolAnalysisDlg(CWnd* pParent /*=NULL*/) : CDialog(CProtocolAnalysisDlg::IDD, pParent)
 {
+	m_portCtrlMap = NULL;
 	//{{AFX_DATA_INIT(CProtocolAnalysisDlg)
 	//}}AFX_DATA_INIT
 	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
@@ -85,6 +86,7 @@ ON_WM_PAINT()
 ON_WM_QUERYDRAGICON()
 ON_BN_CLICKED(IDC_BUTTON_START, OnButtonStart)
 ON_BN_CLICKED(IDC_BUTTON_END, OnButtonStop)
+ON_COMMAND_RANGE(900, 950, OnBtnCommandRange)
 ON_MESSAGE(WM_MY_MESSAGE_COMMON, OnPacket) 
 ON_MESSAGE(WM_MY_MESSAGE_ARP, OnArp) 
 ON_MESSAGE(WM_MY_MESSAGE_IP, OnIp) 
@@ -160,6 +162,7 @@ ON_WM_NCPAINT()
 	ON_BN_CLICKED(IDC_CHECK_AUTO, &CProtocolAnalysisDlg::OnBnClickedCheckAuto)
 	ON_BN_CLICKED(IDC_CHECK_TCP, &CProtocolAnalysisDlg::OnBnClickedCheckTcp)
 	ON_BN_CLICKED(IDC_CHECK_UDP, &CProtocolAnalysisDlg::OnBnClickedCheckUdp)
+	ON_BN_CLICKED(IDC_SETGAME, &CProtocolAnalysisDlg::OnBnClickedSetgame)
 END_MESSAGE_MAP()
 // CProtocolAnalysisDlg message handlers
 
@@ -2396,7 +2399,68 @@ void CProtocolAnalysisDlg::OnDblclkTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
+void CProtocolAnalysisDlg::OnBtnCommandRange(UINT cmdid)
+{
+	CButton * pItem = dynamic_cast<CButton *>(GetDlgItem(cmdid));
+	if (pItem)
+	{
+		if (m_portCtrlMap && m_checkboxSet.count(pItem))
+		{
+			if(m_portCtrlMap->count(m_checkboxSet[pItem]))
+			{
+				(*m_portCtrlMap)[m_checkboxSet[pItem]] = IsDlgButtonChecked(cmdid);
+			}
+		}	
+	}
+}
 
+void CProtocolAnalysisDlg::ResetPorts(map<DWORD,bool> & ports)
+{
+	m_portCtrlMap = &ports;
+	int nIdx = 0;
+	CRect rcAuto;
+	GetDlgItem(IDC_CHECK_AUTO)->GetWindowRect(&rcAuto);
+	ScreenToClient(rcAuto);
+
+	for (auto iter = m_checkboxSet.begin(); iter!= m_checkboxSet.end(); iter++)
+	{
+		(iter->first)->DestroyWindow();
+		delete (iter->first);
+	}
+	m_checkboxSet.clear();
+
+	for (auto iter = ports.begin(); iter != ports.end(); iter++)
+	{
+		CButton * pBtn = new CButton;
+		m_checkboxSet[pBtn] = iter->first;
+		CString sText;
+		sText.Format(_T("%d"), iter->first);
+		CRect rcPos;
+		rcPos.left = rcAuto.right + 30 + nIdx * 60;
+		rcPos.top  = rcAuto.top;
+		rcPos.right= rcPos.left + 50;
+		rcPos.bottom = rcAuto.bottom;
+		
+		pBtn->Create(sText, BS_AUTOCHECKBOX | BS_CHECKBOX | WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, rcPos, this, 900+nIdx++);
+		pBtn->SetFont(GetFont());
+		pBtn->SetCheck(iter->second);
+	}
+}
+
+void CProtocolAnalysisDlg::ViewPorts()
+{
+	if((int)IsDlgButtonChecked(IDC_CHECK_TCP) + (int)IsDlgButtonChecked(IDC_CHECK_UDP) == 1)
+	{
+		if (IsDlgButtonChecked(IDC_CHECK_TCP))
+		{
+			ResetPorts(*CMyAnalysiser::GetInstance()->GetPortMap(false));
+		}
+		else
+		{
+			ResetPorts(*CMyAnalysiser::GetInstance()->GetPortMap(true));
+		}
+	}
+}
 
 void CProtocolAnalysisDlg::OnEnChangeEditMonitorpname()
 {
@@ -2410,6 +2474,8 @@ void CProtocolAnalysisDlg::OnEnChangeEditMonitorpname()
 	TCHAR sText[MAX_PATH] = {0};
 	GetDlgItemText(IDC_EDIT_MONITORPNAME, sText, MAX_PATH);
 	CMyAnalysiser::GetInstance()->SetMonitorProcess(sText);
+
+	ViewPorts();
 }
 
 
@@ -2430,12 +2496,14 @@ void CProtocolAnalysisDlg::OnBnClickedCheckTcp()
 {
 	// TODO: Add your control notification handler code here
 	CMyAnalysiser::GetInstance()->SetPackageType(IsDlgButtonChecked(IDC_CHECK_TCP), IsDlgButtonChecked(IDC_CHECK_UDP));
+	ViewPorts();
 }
 
 void CProtocolAnalysisDlg::OnBnClickedCheckUdp()
 {
 	// TODO: Add your control notification handler code here
 	CMyAnalysiser::GetInstance()->SetPackageType(IsDlgButtonChecked(IDC_CHECK_TCP), IsDlgButtonChecked(IDC_CHECK_UDP));
+	ViewPorts();
 }
 
 void CProtocolAnalysisDlg::OnBnClickedCheckAuto()
@@ -2445,4 +2513,12 @@ void CProtocolAnalysisDlg::OnBnClickedCheckAuto()
 	{
 		m_list_common.PostMessage(WM_VSCROLL, SB_BOTTOM, NULL);  
 	}
+}
+
+
+void CProtocolAnalysisDlg::OnBnClickedSetgame()
+{
+	// TODO: Add your control notification handler code here
+	SetDlgItemText(IDC_EDIT_MONITORPNAME, "");
+	SetDlgItemText(IDC_EDIT_MONITORPNAME, "tslgame.exe");
 }
