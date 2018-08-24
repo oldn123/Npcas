@@ -18,6 +18,7 @@ void ProcessProtocolPacket(unsigned char* user, const struct pcap_pkthdr* h,
 {	
 	//把数据包保存到堆中
 	RAW_PACKET* pRawPacket = new RAW_PACKET;
+	pRawPacket->pPacketInfo = NULL;
 	pRawPacket->ip_seq =0;//包序号为初始为 0
 	pRawPacket->tcpOrUdp_seq =0;
 	memcpy(&pRawPacket->PktHeader, h, sizeof(pcap_pkthdr));
@@ -33,6 +34,7 @@ void ProcessProtocolPacketFromDumpFile(unsigned char* user, const struct pcap_pk
 {	
 	//把数据包保存到堆中
 	RAW_PACKET* pRawPacket = new RAW_PACKET;
+	pRawPacket->pPacketInfo = NULL;
 	pRawPacket->ip_seq =0;//包序号为初始为 0
 	pRawPacket->tcpOrUdp_seq =0;
 	memcpy(&pRawPacket->PktHeader, h, sizeof(pcap_pkthdr));

@@ -23,6 +23,9 @@ typedef struct
 	u_char* pPktData;		//包数据指针
 	u_int ip_seq;   //网络层截获的包Ip序号
 	u_int tcpOrUdp_seq;//传输层截获的包序号
+
+	PacketInformation * pPacketInfo;
+
 } RAW_PACKET;
 int CapturePacket();
 int DumpFileOperation();

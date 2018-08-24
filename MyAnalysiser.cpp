@@ -50,7 +50,9 @@ CMyAnalysiser * CMyAnalysiser::GetInstance()
 
 bool CMyAnalysiser::OnPackageCome(int nPackageType, PacketInformation* pi, RAW_PACKET* pPacket)
 {
-	if (WM_MY_MESSAGE_COMMON != nPackageType)
+	if (WM_MY_MESSAGE_COMMON != nPackageType &&
+		WM_MY_MESSAGE_TCP != nPackageType &&
+		WM_MY_MESSAGE_UDP != nPackageType)
 	{
 		return false;
 	}

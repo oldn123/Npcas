@@ -12,7 +12,7 @@
 extern HWND g_hWnd;//主窗口句柄
 extern bool g_StopThread;//判断是否停止几截获数据包
 EtherHeader g_DisplayEthernet;//链路层协议信息
-PacketInformation g_packet;	//网络数据包信息
+//PacketInformation g_packet;	//网络数据包信息
 arpheader g_DisplayARP;//ARP协议信息
 IcmpHeader g_DisplayIcmp;//ICMP协议信息
 IpHeader g_DisplayIP;//IP协议信息
@@ -24,7 +24,7 @@ UdpHeader g_DisplayUDP;//UDP协议信息
 void PostMsg(unsigned int msg, RAW_PACKET *pRawPacket, WPARAM w = 0)
 {
 	LPARAM lp = (LPARAM)pRawPacket;
-	if (CMyAnalysiser::GetInstance()->OnPackageCome(msg, &g_packet, pRawPacket))
+	if (CMyAnalysiser::GetInstance()->OnPackageCome(msg, pRawPacket->pPacketInfo, pRawPacket))
 	{
 		::PostMessage(g_hWnd, msg, w, lp);
 	}	
@@ -40,32 +40,45 @@ int ParseEthernet(const unsigned char* packetdata,RAW_PACKET *pRawPacket)
 	if (g_StopThread == TRUE)//全局变量判断,退出捕获线程
 		AfxEndThread(1, 1);
 	
-// 	PacketInformation * pi = new PacketInformation;
-// 	PacketInformation & g_packet = *pi;
+ 	PacketInformation * pi = new PacketInformation;
+ 	pRawPacket->pPacketInfo = pi;
 	
 	//清零
-	sprintf(g_packet.SourceMac, "%s", "");
-	sprintf(g_packet.DestinationMac, "%s", "");
-	sprintf(g_packet.NetType, "%s", "");
-	sprintf(g_packet.DestinationAddr, "%s", "");
-	sprintf(g_packet.DestinationPort, "%s", "");
-	sprintf(g_packet.SourceAddr, "%s", "");
-	sprintf(g_packet.SourcePort, "%s", "");
+	sprintf(pi->SourceMac, "%s", "");
+	sprintf(pi->DestinationMac, "%s", "");
+	sprintf(pi->NetType, "%s", "");
+	sprintf(pi->DestinationAddr, "%s", "");
+	sprintf(pi->DestinationPort, "%s", "");
+	sprintf(pi->SourceAddr, "%s", "");
+	sprintf(pi->SourcePort, "%s", "");
 
 	phMac = (MAC_HEADER *) packetdata;  
 	NetType = ntohs(phMac->LengthOrType); //得到上层协议数据类型 
 	MAC=phMac->SrcMacAddr ;
 	//以太网源MAC地址
 	sprintf(g_DisplayEthernet.SourceMac, "%02X:%02X:%02X:%02X:%02X:%02X",*MAC,*(MAC+1),*(MAC+2),*(MAC+3),*(MAC+4),*(MAC+5));
-	strcpy(g_packet.SourceMac,g_DisplayEthernet.SourceMac);
+	strcpy(pi->SourceMac,g_DisplayEthernet.SourceMac);
 	MAC=phMac->DesMacAddr;
 	//以太网目的MAC地址
 	sprintf(g_DisplayEthernet.DestinationMac, "%02X:%02X:%02X:%02X:%02X:%02X",*MAC,*(MAC+1),*(MAC+2),*(MAC+3),*(MAC+4),*(MAC+5));
-	strcpy(g_packet.DestinationMac,g_DisplayEthernet.DestinationMac);
+	strcpy(pi->DestinationMac,g_DisplayEthernet.DestinationMac);
 	packetdata = packetdata+sizeof(MAC_HEADER);/* 获得IP数据包头部的位置 */
 	LPARAM  lp=(LPARAM)pRawPacket;//强制转化
 
+	if (NetType == 0x0800)
+	{
+		ParseIp(packetdata,pRawPacket);
 
+		PostMsg(WM_MY_MESSAGE_COMMON, pRawPacket);	
+	}
+	else
+	{
+		delete pi;
+		delete [] pRawPacket->pPktData;
+		delete pRawPacket;
+	}
+
+	return 1;
 
 	switch (NetType)
 	{
@@ -85,12 +98,12 @@ int ParseEthernet(const unsigned char* packetdata,RAW_PACKET *pRawPacket)
 		if (ntohs(parp->OperationCode)<3 )//判断是否为ARP 
 		{
 			sprintf(g_DisplayEthernet.NetType, "%s", "ARP");
-			sprintf(g_packet.NetType ,"%s","ARP");
+			sprintf(pi->NetType ,"%s","ARP");
 		} 
 		else//否则RARP
 		{
 			sprintf(g_DisplayEthernet.NetType, "%s", "RARP");
-			sprintf(g_packet.NetType ,"%s","RARP");
+			sprintf(pi->NetType ,"%s","RARP");
 		}
 		PostMsg(WM_MY_MESSAGE_ETHERNET, pRawPacket);
 		//解析ARP/RARP协议信息
@@ -100,19 +113,19 @@ int ParseEthernet(const unsigned char* packetdata,RAW_PACKET *pRawPacket)
 	case 0x8863: //PPPOE的发现阶段
 	case 0x8864: //PPPOE的会话阶段
 		sprintf(g_DisplayEthernet.NetType, "%s", "PPPoE");
-		sprintf(g_packet.NetType, "%s", "PPPoE");
+		sprintf(pi->NetType, "%s", "PPPoE");
 		PostMsg(WM_MY_MESSAGE_ETHERNET, pRawPacket);
 		PostMsg(WM_MY_MESSAGE_COMMON, pRawPacket);		
 		return 0;
 	case 0x86dd://IPV6
 		sprintf(g_DisplayEthernet.NetType, "%s", "IPV6");
-		sprintf(g_packet.NetType, "%s", "IPV6");
+		sprintf(pi->NetType, "%s", "IPV6");
 		PostMsg(WM_MY_MESSAGE_ETHERNET, pRawPacket);
 		PostMsg(WM_MY_MESSAGE_COMMON, pRawPacket);	
 		return 0;
 	default:
-		sprintf(g_DisplayEthernet.NetType, "%s", "--");
-		sprintf(g_packet.NetType, "%s", "--");
+		sprintf(g_DisplayEthernet.NetType, "0x%x", NetType);
+		sprintf(pi->NetType,  "0x%x", NetType);
 		PostMsg(WM_MY_MESSAGE_ETHERNET, pRawPacket);
 		PostMsg(WM_MY_MESSAGE_COMMON, pRawPacket);	
 		return 0;
@@ -122,7 +135,7 @@ int ParseEthernet(const unsigned char* packetdata,RAW_PACKET *pRawPacket)
 }
 
 // 解析捕获的ARP信息
-void ParseArp(const unsigned char* packetdata,RAW_PACKET* pRawPacket/*, PacketInformation* pi*/)
+void ParseArp(const unsigned char* packetdata,RAW_PACKET* pRawPacket)
 {
 	unsigned short Protocol;
 	unsigned short Hardware;
@@ -218,10 +231,16 @@ void ParseIp(const unsigned char* packetdata,RAW_PACKET* pRawPacket)
 	sprintf(g_DisplayIP.SourceAddr, "%s", inet_ntoa(addr.sin_addr));
 	addr.sin_addr.s_addr=ip->DestinationAddr;
 	sprintf(g_DisplayIP.DestinationAddr, "%s", inet_ntoa(addr.sin_addr));
-	strcpy(g_packet.SourceAddr ,g_DisplayIP.SourceAddr);
-	strcpy(g_packet.DestinationAddr ,g_DisplayIP.DestinationAddr);	
+
+	if (pRawPacket && pRawPacket->pPacketInfo)
+	{
+		strcpy(pRawPacket->pPacketInfo->SourceAddr ,g_DisplayIP.SourceAddr);
+		strcpy(pRawPacket->pPacketInfo->DestinationAddr ,g_DisplayIP.DestinationAddr);	
+	}
 
 	PostMsg(WM_MY_MESSAGE_IP, pRawPacket);
+
+	
 
 	Length =Length-HeaderLength;
 	off = ntohs(ip->Flags_Offset);
@@ -231,25 +250,25 @@ void ParseIp(const unsigned char* packetdata,RAW_PACKET* pRawPacket)
 		switch (ip->Protocol)
 		{
 		case 6:
-			sprintf(g_packet.NetType, "%s", "TCP");
+			sprintf(pRawPacket->pPacketInfo->NetType, "%s", "TCP");
 			//解析TCP协议信息
 			ParseTcp(pIP_data,pRawPacket);
 			break;
 		case 17:
-			sprintf(g_packet.NetType, "%s", "UDP");
+			sprintf(pRawPacket->pPacketInfo->NetType, "%s", "UDP");
 			//解析UDP协议信息
 			ParseUdp(pIP_data,pRawPacket);
 			break;
 		case 1:
-			sprintf(g_packet.NetType, "%s", "ICMP");
+			sprintf(pRawPacket->pPacketInfo->NetType, "%s", "ICMP");
 			//解析ICMP协议信息
 			ParseIcmp(pIP_data,pRawPacket);
 			break;
 		case 2:
-			sprintf(g_packet.NetType, "%s", "IGMP");
+			sprintf(pRawPacket->pPacketInfo->NetType, "%s", "IGMP");
 			break;
 		default:
-			sprintf(g_packet.NetType, "%s", "--");
+			sprintf(pRawPacket->pPacketInfo->NetType, "%s", "--");
 			break;
 		}
 	}
@@ -317,13 +336,21 @@ int ParseTcp(const unsigned char* packetdata,RAW_PACKET* pRawPacket)
 	Flags = ntohs(ptcp->hdrlen_flags)&0x003f;//标志位 低6位
 	sprintf(g_DisplayTCP.SrcPort, "%d", SourcePort);
 	sprintf(g_DisplayTCP.DstPort, "%d", DestinationPort);
-	strcpy(g_packet.DestinationPort ,g_DisplayTCP.DstPort);
-	strcpy(g_packet.SourcePort ,g_DisplayTCP.SrcPort);
+// 	strcpy(g_packet.DestinationPort ,g_DisplayTCP.DstPort);
+// 	strcpy(g_packet.SourcePort ,g_DisplayTCP.SrcPort);
 	sprintf(g_DisplayTCP.SequenceNum, "%u", SequenceNum);
 	sprintf(g_DisplayTCP.Acknowledgment, "%u", Acknowledgment);
 	sprintf(g_DisplayTCP.HdrLen, "%d", HeaderLength);
 	//保留4位首部长度 + 6位保留 + 6位标志
 	sprintf(g_DisplayTCP.Zero, "%d", (ntohs(ptcp->hdrlen_flags)>>6) & 0x003f );
+
+	if (pRawPacket && pRawPacket->pPacketInfo)
+	{
+		strcpy(pRawPacket->pPacketInfo->SourcePort ,g_DisplayTCP.SrcPort);
+		strcpy(pRawPacket->pPacketInfo->DestinationPort ,g_DisplayTCP.DstPort);	
+	}
+
+
 	char myflags[1024];
 	strcpy(myflags, "");
 	if (Flags & 0x02)
@@ -409,10 +436,16 @@ int ParseUdp(const unsigned char* packetdata,RAW_PACKET* pRawPacket)
 	Length = ntohs(udp->Length);
 	sprintf(g_DisplayUDP.SrcPort, "%d", SourcePort);
 	sprintf(g_DisplayUDP.DstPort, "%d", DestinationPort);
-	strcpy(g_packet.DestinationPort ,g_DisplayUDP.DstPort);
-	strcpy(g_packet.SourcePort ,g_DisplayUDP.SrcPort);
+// 	strcpy(g_packet.DestinationPort ,g_DisplayUDP.DstPort);
+// 	strcpy(g_packet.SourcePort ,g_DisplayUDP.SrcPort);
 	sprintf(g_DisplayUDP.Length, "%d", Length);
 	sprintf(g_DisplayUDP.Checksum, "%d", ntohs(udp->Checksum));
+
+	if (pRawPacket && pRawPacket->pPacketInfo)
+	{
+		strcpy(pRawPacket->pPacketInfo->SourcePort ,g_DisplayUDP.SrcPort);
+		strcpy(pRawPacket->pPacketInfo->DestinationPort ,g_DisplayUDP.DstPort);	
+	}
 	
 	PostMsg(WM_MY_MESSAGE_UDP, pRawPacket);
 	//是否含有DNS协议 通过判断端口号是否为 53

@@ -19,7 +19,7 @@ static char THIS_FILE[] = __FILE__;
 #endif
 #define BUFFER_MAX_LENGTH 65536 /* 缓冲区最大长度*/
 char g_PacketFilter[1024];
-extern  PacketInformation g_packet;
+//extern  PacketInformation g_packet;
 extern EtherHeader g_DisplayEthernet;
 extern arpheader g_DisplayARP;
 extern IpHeader g_DisplayIP;
@@ -272,6 +272,7 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_list_common.InsertColumn(5, "源端口", LVCFMT_LEFT, 300, 1);
 	m_list_common.InsertColumn(6, "目的IP", LVCFMT_LEFT, 300, 1);
 	m_list_common.InsertColumn(7, "目的端口", LVCFMT_LEFT, 300, 1);
+	m_list_common.InsertColumn(8, "数据区", LVCFMT_LEFT, -1, 1);
 	m_list_common.SetColumnWidth(0, 40);
 	m_list_common.SetColumnWidth(1, 120);
 	m_list_common.SetColumnWidth(2, 120);
@@ -694,6 +695,13 @@ UINT ThreadReadFile(LPVOID pParam)//读取文件线程
 
 LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 {
+	PacketInformation * pi = NULL;
+	RAW_PACKET * prp = (RAW_PACKET *)lParam;
+	if (prp)
+	{
+		pi = prp->pPacketInfo;
+	}
+
 	char str[10]; 
 	sprintf(str, "%d", m_nPacket);
 	int nIdx = m_list_common.GetItemCount();
@@ -701,13 +709,20 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	/*添加附加据,即数将列表项与存放原始数据包的堆地址指针关联*/
 	m_list_common.SetItemData(nIdx,(DWORD)lParam);
 	m_list_common.SetItemText(nIdx, 0, str);
-	m_list_common.SetItemText(nIdx, 1, g_packet.SourceMac);
-	m_list_common.SetItemText(nIdx, 2, g_packet.DestinationMac);
-	m_list_common.SetItemText(nIdx, 3, g_packet.NetType);
-	m_list_common.SetItemText(nIdx, 4, g_packet.SourceAddr);
-	m_list_common.SetItemText(nIdx, 5, g_packet.SourcePort);
-	m_list_common.SetItemText(nIdx, 6, g_packet.DestinationAddr);
-	m_list_common.SetItemText(nIdx, 7, g_packet.DestinationPort);
+	m_list_common.SetItemText(nIdx, 1, pi->SourceMac);
+	m_list_common.SetItemText(nIdx, 2, pi->DestinationMac);
+	m_list_common.SetItemText(nIdx, 3, pi->NetType);
+	m_list_common.SetItemText(nIdx, 4, pi->SourceAddr);
+	m_list_common.SetItemText(nIdx, 5, pi->SourcePort);
+	m_list_common.SetItemText(nIdx, 6, pi->DestinationAddr);
+	m_list_common.SetItemText(nIdx, 7, pi->DestinationPort);
+
+	if (prp->pPacketInfo)
+	{	
+		delete prp->pPacketInfo;
+		prp->pPacketInfo = NULL;
+	}
+
 	UpdateData(FALSE);
 	PacketNumber.count = m_nPacket+1;
 	CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_PACKET_COUNT);
@@ -732,6 +747,12 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 		CMenu *pp2=(CMenu *)GetMenu();
 		pp2->EnableMenuItem (MENU_START,FALSE);
 	}
+
+	if (IsDlgButtonChecked(IDC_CHECK_AUTO))
+	{
+		m_list_common.PostMessage(WM_VSCROLL, SB_BOTTOM, NULL);  
+	}
+
 	return  0;
 }
 
@@ -1330,6 +1351,22 @@ void CProtocolAnalysisDlg::OnLButtonUp(UINT nFlags, CPoint point)
 	CDialog::OnLButtonUp(nFlags, point);
 }
 
+void ReSizeList(CListCtrl * plc)
+{
+	CRect rcCtrl;
+	if (plc)
+	{
+		plc->GetClientRect(&rcCtrl);
+		int nSize = rcCtrl.Width();
+		int nColCnt = plc->GetHeaderCtrl()->GetItemCount();
+		for (int i = 0; i < nColCnt - 1; i++)
+		{
+			nSize -= plc->GetColumnWidth(i);
+		}
+		plc->SetColumnWidth(nColCnt-1, nSize);
+	}
+}
+
 void CProtocolAnalysisDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialog::OnSize(nType, cx, cy);
@@ -1353,6 +1390,7 @@ void CProtocolAnalysisDlg::OnSize(UINT nType, int cx, int cy)
 		m_picCtrl.ShowWindow(SW_SHOW);
 		m_list_common.SetWindowPos(NULL, rect1.left, rect1.top, rect1.Width(),
 		h	 , NULL); 
+		ReSizeList(&m_list_common);
 		m_list_ethernet.SetWindowPos(NULL, rect1.left, rect1.top, rect1.Width(),
 			h, NULL);
 		m_list_arp.SetWindowPos(NULL, rect1.left, rect1.top, rect1.Width(),
@@ -2380,23 +2418,23 @@ void CProtocolAnalysisDlg::OnBnClickedCheckRecv()
 	CMyAnalysiser::GetInstance()->SetPackageDir(IsDlgButtonChecked(IDC_CHECK_SEND), IsDlgButtonChecked(IDC_CHECK_RECV));
 }
 
-
-void CProtocolAnalysisDlg::OnBnClickedCheckAuto()
-{
-	// TODO: Add your control notification handler code here
-
-}
-
-
 void CProtocolAnalysisDlg::OnBnClickedCheckTcp()
 {
 	// TODO: Add your control notification handler code here
 	CMyAnalysiser::GetInstance()->SetPackageType(IsDlgButtonChecked(IDC_CHECK_TCP), IsDlgButtonChecked(IDC_CHECK_UDP));
 }
 
-
 void CProtocolAnalysisDlg::OnBnClickedCheckUdp()
 {
 	// TODO: Add your control notification handler code here
 	CMyAnalysiser::GetInstance()->SetPackageType(IsDlgButtonChecked(IDC_CHECK_TCP), IsDlgButtonChecked(IDC_CHECK_UDP));
+}
+
+void CProtocolAnalysisDlg::OnBnClickedCheckAuto()
+{
+	// TODO: Add your control notification handler code here
+	if (IsDlgButtonChecked(IDC_CHECK_AUTO))
+	{
+		m_list_common.PostMessage(WM_VSCROLL, SB_BOTTOM, NULL);  
+	}
 }
