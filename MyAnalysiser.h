@@ -30,6 +30,8 @@ public:
 	void	SetPackageDir(bool bSend, bool bRecv){m_bSend = bSend; m_bRecv = bRecv;}
 	void	SetLocalAddr(const char * addr){m_myAddr = addr;}
 
+	void	DispBuffer(RAW_PACKET* pPacket, char * pbuf, int & nsize);
+
 protected:
 	static CMyAnalysiser * m_pInstance;
 	set<string>				m_ignoreDestIp;
@@ -44,5 +46,6 @@ protected:
 	bool					m_bTcp;
 	bool					m_bUdp;
 	string					m_myAddr;
+	char					m_dispBuffs[1024];
 };
 

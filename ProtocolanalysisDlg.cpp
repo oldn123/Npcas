@@ -272,7 +272,8 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_list_common.InsertColumn(5, "源端口", LVCFMT_LEFT, 300, 1);
 	m_list_common.InsertColumn(6, "目的IP", LVCFMT_LEFT, 300, 1);
 	m_list_common.InsertColumn(7, "目的端口", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(8, "数据区", LVCFMT_LEFT, -1, 1);
+	m_list_common.InsertColumn(8, "size", LVCFMT_RIGHT, 300, 1);
+	m_list_common.InsertColumn(9, "数据区", LVCFMT_LEFT, -1, 1);
 	m_list_common.SetColumnWidth(0, 40);
 	m_list_common.SetColumnWidth(1, 120);
 	m_list_common.SetColumnWidth(2, 120);
@@ -281,6 +282,7 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_list_common.SetColumnWidth(5, 50);
 	m_list_common.SetColumnWidth(6, 110);
 	m_list_common.SetColumnWidth(7, 60);
+	m_list_common.SetColumnWidth(8, 60);
 	ListView_SetExtendedListViewStyle(m_list_common.m_hWnd,
 		LVS_EX_FULLROWSELECT |
 		LVS_EX_FLATSB |
@@ -716,6 +718,12 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	m_list_common.SetItemText(nIdx, 5, pi->SourcePort);
 	m_list_common.SetItemText(nIdx, 6, pi->DestinationAddr);
 	m_list_common.SetItemText(nIdx, 7, pi->DestinationPort);
+	char sText[200] = {0};
+	int nsize = 100;
+	CMyAnalysiser::GetInstance()->DispBuffer(prp, sText, nsize);
+	sprintf(str, "0x%x", nsize);
+	m_list_common.SetItemText(nIdx, 8, str);
+	m_list_common.SetItemText(nIdx, 9, sText);
 
 	if (prp->pPacketInfo)
 	{	
@@ -1363,7 +1371,7 @@ void ReSizeList(CListCtrl * plc)
 		{
 			nSize -= plc->GetColumnWidth(i);
 		}
-		plc->SetColumnWidth(nColCnt-1, nSize);
+		plc->SetColumnWidth(nColCnt-1, nSize-10);
 	}
 }
 

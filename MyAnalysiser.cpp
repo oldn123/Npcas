@@ -129,6 +129,36 @@ bool CMyAnalysiser::OnPackageCome(int nPackageType, PacketInformation* pi, RAW_P
 	return true;
 }
 
+void hextostr(char *ptr,unsigned char *buf,int len)
+{
+	if (len > 999)
+	{
+		len = 999;
+	}
+	for(int i = 0; i < len; i++)
+	{
+		sprintf(ptr, "%02x",buf[i]);
+		ptr += 2;
+	}
+}
+
+void CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
+{
+	int nzInput = nsize - 1;	
+	if (IsUdpPackage(pPacket))
+	{
+		unsigned char * pbuf = pPacket->pPktData + 0x2A;
+		nsize = pPacket->PktHeader.len - 0x2A;
+		hextostr(_pbuf, pbuf, nsize < nzInput ? nsize : nzInput);
+	}
+	else if (IsTcpPackage(pPacket))
+	{
+		unsigned char * pbuf = pPacket->pPktData + 0x36;
+		nsize = pPacket->PktHeader.len - 0x36;
+		hextostr(m_dispBuffs, pbuf, nsize < nzInput ? nsize : nzInput);
+	}
+}
+
 bool CMyAnalysiser::IsDstIpInIgnore(const char * ip)
 {
 	if (m_ignoreDestIp.count(ip))
