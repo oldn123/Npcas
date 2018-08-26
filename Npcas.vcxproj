@@ -134,9 +134,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="asmfunc.cpp" />
     <ClCompile Include="DeviceDialog.cpp" />
     <ClCompile Include="DlgFilterHelp.cpp" />
     <ClCompile Include="filterdlg.cpp" />
+    <ClCompile Include="GameFilter.cpp" />
     <ClCompile Include="helpdialog.cpp" />
     <ClCompile Include="MyAnalysiser.cpp" />
     <ClCompile Include="OpenScreenWnd.cpp" />
@@ -153,6 +155,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="asmfunc.h" />
     <ClInclude Include="MyAnalysiser.h" />
     <ClInclude Include="PortViewer.h" />
     <ClInclude Include="sniffer.h" />

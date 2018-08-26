@@ -215,14 +215,14 @@ bool CMyAnalysiser::IsDstIpInIgnore(const char * ip)
 	return false;
 }
 
-void CMyAnalysiser::SetMonitorProcess(const char * processname)
+bool CMyAnalysiser::SetMonitorProcess(const char * processname)
 {
 	if (strlen(processname) < 1)
 	{
 		m_bMonitorPort = false;
 		m_monitorPorts_tcp.clear();
 		m_monitorPorts_udp.clear();
-		return;
+		return true;
 	}
 
 	m_bMonitorPort = true;
@@ -245,7 +245,7 @@ void CMyAnalysiser::SetMonitorProcess(const char * processname)
 		tp = UdpType;
 		DWORD ports[100] = {0};
 		GetAllPortByProcessByName(tp, processname, ports, 100);
-		m_monitorPorts_tcp.clear();
+		m_monitorPorts_udp.clear();
 		for (int i = 0; i < 100; i++)
 		{
 			if (ports[i] < 1)
@@ -255,6 +255,8 @@ void CMyAnalysiser::SetMonitorProcess(const char * processname)
 			m_monitorPorts_udp[ports[i]] = true;
 		}
 	}
+
+	return m_monitorPorts_tcp.size() + m_monitorPorts_udp.size() > 0;
 }
 
 void CMyAnalysiser::AddToIgnoreDestIp(const char * ip)

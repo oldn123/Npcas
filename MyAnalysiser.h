@@ -25,7 +25,7 @@ public:
 	bool	IsSrcIpInIgnore(const char * ip);
 	bool	IsDstIpInIgnore(const char * ip);
 
-	void	SetMonitorProcess(const char *);
+	bool	SetMonitorProcess(const char *);
 	map<DWORD,bool> * GetPortMap(bool bUdp){return bUdp ? &m_monitorPorts_udp : &m_monitorPorts_tcp; }
 
 	void	SetPackageType(bool bTcp, bool bUdp){m_bTcp = bTcp; m_bUdp = bUdp;}

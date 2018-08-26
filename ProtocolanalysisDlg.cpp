@@ -234,10 +234,12 @@ int getLocalInfo(char * mac, char * ipMe)
 	return 0;
 }
 
-
+extern int do_test();
 
 BOOL CProtocolAnalysisDlg::OnInitDialog()
 {	
+	do_test();
+
 	CDialog::OnInitDialog();
 	AfxGetMainWnd()->CenterWindow(); 
 	SetProp(m_hWnd, g_lwtProgramName, g_ProgramValue);
@@ -2473,9 +2475,14 @@ void CProtocolAnalysisDlg::OnEnChangeEditMonitorpname()
 
 	TCHAR sText[MAX_PATH] = {0};
 	GetDlgItemText(IDC_EDIT_MONITORPNAME, sText, MAX_PATH);
-	CMyAnalysiser::GetInstance()->SetMonitorProcess(sText);
+	bool bok = CMyAnalysiser::GetInstance()->SetMonitorProcess(sText);
 
 	ViewPorts();
+	CEdit * pEdit = (CEdit *)GetDlgItem(IDC_EDIT_MONITORPNAME);
+	if (pEdit && bok)
+	{
+		pEdit->GetDC()->SetBkColor(RGB(0,255,0));
+	}
 }
 
 
