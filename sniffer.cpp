@@ -21,11 +21,15 @@ void ProcessProtocolPacket(unsigned char* user, const struct pcap_pkthdr* h,
 	pRawPacket->pPacketInfo = NULL;
 	pRawPacket->ip_seq =0;//包序号为初始为 0
 	pRawPacket->tcpOrUdp_seq =0;
+
 	memcpy(&pRawPacket->PktHeader, h, sizeof(pcap_pkthdr));
 	u_char* pPktData = new u_char[h->caplen];
 	memcpy(pPktData, packetdata, h->caplen);//注意此处为packetdata， 包数据
 	pRawPacket->pPktData = pPktData;
-	pcap_dump(user, h, packetdata);//实时保存截获到的数据
+	if (user)
+	{
+		pcap_dump(user, h, packetdata);//实时保存截获到的数据
+	}
 	ParseEthernet(packetdata,pRawPacket);//解析链路层 以太网信息
 }
 
@@ -105,6 +109,10 @@ int CapturePacket()
 	strFilePath+=_T("\\temp.pcap");
 	//打开网络数据包文件(打开堆文件) 
 	PcapFile = pcap_dump_open(PcapHandle, strFilePath);
+	if (!PcapFile)
+	{
+		::MessageBox(g_pdlg->m_hWnd,strFilePath,_T("打开文件失败"),MB_DEFBUTTON1);
+	}
 	if (CaptureFilter != NULL)
 	{
 		//获得子网掩码

@@ -7,6 +7,8 @@
 #include "sniffer.h"
 #include "pcap.h"
 
+#include ".\rtmp\PacketOrderer.h"
+
 #include "MyAnalysiser.h"
 
 extern HWND g_hWnd;//主窗口句柄
@@ -19,6 +21,8 @@ IpHeader g_DisplayIP;//IP协议信息
 TcpHeader g_DisplayTCP;// TCP协议信息
 UdpHeader g_DisplayUDP;//UDP协议信息
 
+
+//PacketOrderer g_packetOrder;
 //注意字节序
 
 void PostMsg(unsigned int msg, RAW_PACKET *pRawPacket, WPARAM w = 0)
@@ -77,6 +81,8 @@ int ParseEthernet(const unsigned char* packetdata,RAW_PACKET *pRawPacket)
 		delete [] pRawPacket->pPktData;
 		delete pRawPacket;
 	}
+
+	//g_packetOrder.AddPacket((const char *)packetdata, pRawPacket->PktHeader.len - sizeof(MAC_HEADER));
 
 	return 1;
 

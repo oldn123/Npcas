@@ -2,6 +2,8 @@
 #include "MyAnalysiser.h"
 #include "Protocol.h"
 
+#include "rtmp/PacketOrderer.h"
+
 bool IsTcpPackage(RAW_PACKET* prp)
 {
 	if(((MAC_HEADER *)prp->pPktData)->LengthOrType == 0x0008)
@@ -189,6 +191,29 @@ void hextostr(char *ptr,unsigned char *buf,int len)
 	}
 }
 
+void CMyAnalysiser::OnTcp(unsigned char * pbuf,	int nSize)
+{
+	char strOutput[100] = {0};
+	char * pSt = "";
+	RtmpPacket::RtmpDataTypes rdt = GetRtmpPacketType(pbuf);
+	switch(rdt)
+	{
+	case RtmpPacket::Video:pSt = "Video";break;
+	case RtmpPacket::Handshake:pSt = "Handshake";break;
+	case RtmpPacket::ChunkSize:pSt = "ChunkSize";break;
+	case RtmpPacket::Ping:pSt = "Ping";break;
+	case RtmpPacket::ServerBandwidth:pSt = "ServerBandwidth";break;
+	case RtmpPacket::ClientBandwidth:pSt = "ClientBandwidth";break;
+	case RtmpPacket::Audio:pSt = "Audio";break;
+	case RtmpPacket::Notify:pSt = "Notify";break;
+	case RtmpPacket::Invoke:pSt = "Invoke";break;
+	case RtmpPacket::AggregateMessage:pSt = "AggregateMessage";break;
+	case RtmpPacket::Unknown:pSt = "Unknown";break;
+	}
+	sprintf(strOutput, "----%s, size:%d\n", pSt, nSize);
+	OutputDebugStringA(strOutput);
+}
+
 void CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
 {
 	int nzInput = nsize - 1;	
@@ -203,6 +228,10 @@ void CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
 		unsigned char * pbuf = pPacket->pPktData + 0x36;
 		nsize = pPacket->PktHeader.len - 0x36;
 		hextostr(m_dispBuffs, pbuf, nsize < nzInput ? nsize : nzInput);
+		if (nsize >= 8)
+		{
+			OnTcp(pbuf, nsize);
+		}
 	}
 }
 

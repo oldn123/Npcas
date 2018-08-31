@@ -146,6 +146,8 @@
     <ClCompile Include="Protocol.cpp" />
     <ClCompile Include="Protocolanalysis.cpp" />
     <ClCompile Include="ProtocolanalysisDlg.cpp" />
+    <ClCompile Include="rtmp\PacketOrderer.cpp" />
+    <ClCompile Include="rtmp\RtmpPacketAggregator.cpp" />
     <ClCompile Include="sniffer.cpp" />
     <ClCompile Include="StdAfx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -158,6 +160,12 @@
     <ClInclude Include="asmfunc.h" />
     <ClInclude Include="MyAnalysiser.h" />
     <ClInclude Include="PortViewer.h" />
+    <ClInclude Include="rtmp\PacketOrderer.h" />
+    <ClInclude Include="rtmp\RtmpPacket.h" />
+    <ClInclude Include="rtmp\RtmpPacketAggregator.h" />
+    <ClInclude Include="rtmp\RtmpPacketTypeManaged.h" />
+    <ClInclude Include="rtmp\TcpDefinitions.h" />
+    <ClInclude Include="rtmp\TcpPacket.h" />
     <ClInclude Include="sniffer.h" />
     <ClInclude Include="DeviceDialog.h" />
     <ClInclude Include="DlgFilterHelp.h" />

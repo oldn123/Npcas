@@ -54,7 +54,14 @@ BOOL CDeviceDialog::OnInitDialog()
 	for(int i=0;i<g_network_device_number;i++)
 	{
 		m_list_device.InsertString (0,g_network_device_name[i]);
+
 	}
+
+	if (m_list_device.GetCount())
+	{	
+		m_list_device.SetCurSel(0);
+	}
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }

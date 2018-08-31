@@ -13,6 +13,9 @@
       <UniqueIdentifier>{25699ed8-5bc9-460e-9501-da36d21353fe}</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
     </Filter>
+    <Filter Include="rtmp">
+      <UniqueIdentifier>{859d0431-da46-47d6-873a-d6d4cba1a63c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DeviceDialog.cpp">
@@ -57,6 +60,12 @@
     <ClCompile Include="asmfunc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="rtmp\RtmpPacketAggregator.cpp">
+      <Filter>rtmp</Filter>
+    </ClCompile>
+    <ClCompile Include="rtmp\PacketOrderer.cpp">
+      <Filter>rtmp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sniffer.h">
@@ -100,6 +109,24 @@
     </ClInclude>
     <ClInclude Include="asmfunc.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rtmp\RtmpPacket.h">
+      <Filter>rtmp</Filter>
+    </ClInclude>
+    <ClInclude Include="rtmp\RtmpPacketAggregator.h">
+      <Filter>rtmp</Filter>
+    </ClInclude>
+    <ClInclude Include="rtmp\TcpDefinitions.h">
+      <Filter>rtmp</Filter>
+    </ClInclude>
+    <ClInclude Include="rtmp\TcpPacket.h">
+      <Filter>rtmp</Filter>
+    </ClInclude>
+    <ClInclude Include="rtmp\RtmpPacketTypeManaged.h">
+      <Filter>rtmp</Filter>
+    </ClInclude>
+    <ClInclude Include="rtmp\PacketOrderer.h">
+      <Filter>rtmp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

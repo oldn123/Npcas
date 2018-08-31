@@ -35,6 +35,10 @@ public:
 	void	DispBuffer(RAW_PACKET* pPacket, char * pbuf, int & nsize);
 
 protected:
+	void	OnTcp(unsigned char * pbuf,	int nSize);
+
+
+protected:
 	static CMyAnalysiser * m_pInstance;
 	set<string>				m_ignoreDestIp;
 	set<string>				m_ignoreSrcIp;

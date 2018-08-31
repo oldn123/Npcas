@@ -238,7 +238,7 @@ extern int do_test();
 
 BOOL CProtocolAnalysisDlg::OnInitDialog()
 {	
-	do_test();
+	//do_test();
 
 	CDialog::OnInitDialog();
 	AfxGetMainWnd()->CenterWindow(); 
