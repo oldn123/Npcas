@@ -7,6 +7,7 @@ class RtmpPacketAggregator
 public:
 	RtmpPacketAggregator(int port);
 	void Add(const char * data, int bytesTotal);
+	void AddTcpData(const char * data, int bytesTotal);
 	RtmpPacket * PacketReady();
 
 private:

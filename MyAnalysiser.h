@@ -1,5 +1,5 @@
 #pragma once
-
+#include "rtmp/RtmpPacket.h"
 #include "sniffer.h"
 #include <string>
 #include <map>
@@ -35,7 +35,7 @@ public:
 	void	DispBuffer(RAW_PACKET* pPacket, char * pbuf, int & nsize);
 
 protected:
-	void	OnTcp(unsigned char * pbuf,	int nSize);
+	RtmpPacket::RtmpDataTypes OnTcp(unsigned char * pbuf,	int nSize);
 
 
 protected:

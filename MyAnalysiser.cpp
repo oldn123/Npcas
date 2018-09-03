@@ -2,7 +2,8 @@
 #include "MyAnalysiser.h"
 #include "Protocol.h"
 
-#include "rtmp/PacketOrderer.h"
+#include <string>
+using namespace std;
 
 bool IsTcpPackage(RAW_PACKET* prp)
 {
@@ -191,28 +192,32 @@ void hextostr(char *ptr,unsigned char *buf,int len)
 	}
 }
 
-void CMyAnalysiser::OnTcp(unsigned char * pbuf,	int nSize)
+RtmpPacket::RtmpDataTypes CMyAnalysiser::OnTcp(unsigned char * pbuf,	int nSize)
 {
-	char strOutput[100] = {0};
-	char * pSt = "";
 	RtmpPacket::RtmpDataTypes rdt = GetRtmpPacketType(pbuf);
-	switch(rdt)
-	{
-	case RtmpPacket::Video:pSt = "Video";break;
-	case RtmpPacket::Handshake:pSt = "Handshake";break;
-	case RtmpPacket::ChunkSize:pSt = "ChunkSize";break;
-	case RtmpPacket::Ping:pSt = "Ping";break;
-	case RtmpPacket::ServerBandwidth:pSt = "ServerBandwidth";break;
-	case RtmpPacket::ClientBandwidth:pSt = "ClientBandwidth";break;
-	case RtmpPacket::Audio:pSt = "Audio";break;
-	case RtmpPacket::Notify:pSt = "Notify";break;
-	case RtmpPacket::Invoke:pSt = "Invoke";break;
-	case RtmpPacket::AggregateMessage:pSt = "AggregateMessage";break;
-	case RtmpPacket::Unknown:pSt = "Unknown";break;
-	}
-	sprintf(strOutput, "----%s, size:%d\n", pSt, nSize);
-	OutputDebugStringA(strOutput);
+	return rdt;
 }
+
+
+//utf±àÂë×ª»»Îªansi±àÂë 
+string Utf82Ansi(const char* srcCode)
+{	
+	int srcCodeLen=0;
+	srcCodeLen=MultiByteToWideChar(CP_UTF8,NULL,srcCode,strlen(srcCode),NULL,0);
+	wchar_t* result_t=new wchar_t[srcCodeLen+1];
+	MultiByteToWideChar(CP_UTF8,NULL,srcCode,strlen(srcCode),result_t,srcCodeLen);
+	result_t[srcCodeLen]='/0';
+	srcCodeLen=WideCharToMultiByte(CP_ACP,NULL,result_t,wcslen(result_t),NULL,0,NULL,NULL);
+	char* result=new char[srcCodeLen+1];
+	WideCharToMultiByte(CP_ACP,NULL,result_t,wcslen(result_t),result,srcCodeLen,NULL,NULL);
+	result[srcCodeLen]='/0';
+	string srcAnsiCode="";
+	srcAnsiCode=(string)result;
+	delete result_t;
+	delete result;
+	return srcAnsiCode;
+}
+
 
 void CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
 {
@@ -227,11 +232,44 @@ void CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
 	{
 		unsigned char * pbuf = pPacket->pPktData + 0x36;
 		nsize = pPacket->PktHeader.len - 0x36;
-		hextostr(m_dispBuffs, pbuf, nsize < nzInput ? nsize : nzInput);
 		if (nsize >= 8)
 		{
-			OnTcp(pbuf, nsize);
+			RtmpPacket::RtmpDataTypes rdt = OnTcp(pbuf, nsize);
+			
+			string sJson;
+			char * pSt = "";
+			//sprintf_s(St, "0x%x:", rdt);
+			switch(rdt)
+			{
+			case RtmpPacket::Video:pSt = "Video:";break;
+			case RtmpPacket::Handshake:pSt = "Handshake:";break;
+			case RtmpPacket::ChunkSize:pSt = "ChunkSize:";break;
+			case RtmpPacket::Ping:pSt = "Ping:";break;
+			case RtmpPacket::ServerBandwidth:pSt = "SvrBandwidth:";break;
+			case RtmpPacket::ClientBandwidth:pSt = "ClentBandwidth:";break;
+			case RtmpPacket::Audio:pSt = "Audio:";break;
+			case RtmpPacket::Notify:pSt = "Notify:";break;
+			case RtmpPacket::Invoke:pSt = "Invoke:";break;
+			case RtmpPacket::AggregateMessage:pSt = "AggregateMsg:";break;
+			case RtmpPacket::Unknown:pSt = ":";break;
+			}
+
+			if (rdt == RtmpPacket::Unknown)
+			{
+				bool bJson = ((pbuf[0] & 0xc0) >> 6) == 2 && pbuf[4] == '{';
+				if (bJson)
+				{
+					char jsoncode[500] = {0};
+					memcpy(&jsoncode[0], &pbuf[4], nsize - 4 > nzInput ? nzInput : nsize - 4);
+					sJson = jsoncode;//Utf82Ansi(jsoncode);
+					pSt = (char*)sJson.c_str();
+				}
+			}
+			strcat(_pbuf, pSt);
 		}
+		int n = strlen(_pbuf);
+		nzInput -= n;
+		hextostr(&_pbuf[n], pbuf, nsize < nzInput ? nsize : nzInput);
 	}
 }
 
@@ -254,11 +292,24 @@ bool CMyAnalysiser::SetMonitorProcess(const char * processname)
 		return true;
 	}
 
+	DWORD dwPid = 0;
+	if (strstr(processname, "pid:") != 0)
+	{
+		dwPid = atoi(&processname[4]);
+	}
+
 	m_bMonitorPort = true;
 	TcpOrUdp tp = TcpType;
 	{
 		DWORD ports[100] = {0};
-		GetAllPortByProcessByName(tp, processname, ports, 100);
+		if (dwPid)
+		{
+			GetAllPortByProcessId(tp, dwPid, ports, 100);
+		}
+		else
+		{
+			GetAllPortByProcessByName(tp, processname, ports, 100);
+		}	
 		m_monitorPorts_tcp.clear();
 		for (int i = 0; i < 100; i++)
 		{
@@ -273,7 +324,14 @@ bool CMyAnalysiser::SetMonitorProcess(const char * processname)
 	{
 		tp = UdpType;
 		DWORD ports[100] = {0};
-		GetAllPortByProcessByName(tp, processname, ports, 100);
+		if (dwPid)
+		{
+			GetAllPortByProcessId(tp, dwPid, ports, 100);
+		}
+		else
+		{
+			GetAllPortByProcessByName(tp, processname, ports, 100);
+		}
 		m_monitorPorts_udp.clear();
 		for (int i = 0; i < 100; i++)
 		{

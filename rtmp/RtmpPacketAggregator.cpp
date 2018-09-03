@@ -9,15 +9,8 @@ RtmpPacketAggregator::RtmpPacketAggregator(int port)
 	totalExpected = 0;
 }
 
-void RtmpPacketAggregator::Add(const char * data, int bytesTotal){
-	const char * payload = data + sizeof(IPHEADER) + sizeof(TCPHEADER);
-
-	int sizeOfPayload = bytesTotal - sizeof(IPHEADER) - sizeof(TCPHEADER);
-
-	if(sizeOfPayload <= 0){
-		return;
-	}
-
+void RtmpPacketAggregator::AddTcpData(const char * payload, int sizeOfPayload)
+{
 	// see if a packet started
 	auto testingType = GetRtmpPacketType((unsigned char *)payload);
 
@@ -31,7 +24,7 @@ void RtmpPacketAggregator::Add(const char * data, int bytesTotal){
 
 		// tracking this packet
 		payloadType = testingType;
-		
+
 		// start of packet
 		foundStart = true;
 
@@ -56,6 +49,18 @@ void RtmpPacketAggregator::Add(const char * data, int bytesTotal){
 
 		totalFound += sizeOfPayload;
 	}
+}
+
+void RtmpPacketAggregator::Add(const char * data, int bytesTotal){
+	const char * payload = data + sizeof(IPHEADER) + sizeof(TCPHEADER);
+
+	int sizeOfPayload = bytesTotal - sizeof(IPHEADER) - sizeof(TCPHEADER);
+
+	if(sizeOfPayload <= 0){
+		return;
+	}
+
+	AddTcpData(payload, sizeOfPayload);
 }
 
 RtmpPacket * RtmpPacketAggregator::PacketReady(){
