@@ -68,6 +68,7 @@
 #define IDR_MENU3                       294
 #define IDI_ICON_SKIN                   295
 #define IDR_MENU4                       296
+#define IDD_DIALOG_SAVEDATA             298
 #define IDC_EDIT_FILTER                 1000
 #define IDC_EDIT_RED                    1000
 #define IDC_EDIT_RULE_NAME              1000
@@ -77,8 +78,11 @@
 #define IDC_EDIT2                       1002
 #define IDC_EDIT_GREEN                  1002
 #define IDC_EDIT_RULE_PROTOCOL          1002
+#define IDC_EDIT_OFFSET                 1002
 #define IDC_BUTTON_DELETE_RULE          1003
 #define IDC_BUTTON_PARAMETER            1003
+#define IDC_EDIT_OFFSET2                1003
+#define IDC_EDIT_LEN                    1003
 #define IDC_LIST1                       1005
 #define IDC_LIST_INTRUSION_RULE         1005
 #define IDC_LIST_DEVICE                 1005
@@ -121,6 +125,7 @@
 #define IDC_LIST_INTRUSION_ALERT        1041
 #define IDC_EDIT3                       1042
 #define IDC_EDIT_RULE_CODE              1042
+#define IDC_EDIT_SAMPLE                 1042
 #define IDC_EDIT4                       1043
 #define IDC_EDIT_RULE_DEFINATION        1043
 #define IDC_EDIT5                       1044
@@ -147,6 +152,7 @@
 #define IDC_LIST_DNS                    1072
 #define IDC_EDIT1                       1073
 #define IDC_EDIT_MONITORPNAME           1073
+#define IDC_EDIT_PATH                   1073
 #define IDC_CHECK_AUTO                  1074
 #define IDC_CHECK_RECV                  1075
 #define IDC_CHECK_SEND                  1076
@@ -215,13 +221,15 @@
 #define ID_IGNORE_DESTIP                32842
 #define ID_RCLIK_32843                  32843
 #define ID_IGNORE_SRCIP                 32844
+#define ID_RCLIK_32845                  32845
+#define ID_RCLIK_SAVEDATA               32846
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        298
-#define _APS_NEXT_COMMAND_VALUE         32845
+#define _APS_NEXT_RESOURCE_VALUE        299
+#define _APS_NEXT_COMMAND_VALUE         32847
 #define _APS_NEXT_CONTROL_VALUE         1080
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

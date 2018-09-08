@@ -6,6 +6,7 @@
 #include "Protocol.h"
 #include "sniffer.h"
 #include "MyAnalysiser.h"
+#include "SaveDataDlg.h"
 
 #include <IPHlpApi.h>  
 using namespace std;
@@ -116,7 +117,7 @@ ON_BN_CLICKED(IDC_BUTTON_SET_FILTER, OnButtonSetFilter)
 	ON_COMMAND(MENU_SAVE, OnSave)
 	ON_WM_CREATE()
 	ON_WM_CANCELMODE()
-	ON_NOTIFY(NM_CLICK, IDC_LIST_COM, OnClickListCom)
+	//ON_NOTIFY(NM_CLICK, IDC_LIST_COM, OnClickListCom)
 	ON_NOTIFY(NM_CLICK, IDC_LIST_UDP, OnClickListUdp)
 	ON_NOTIFY(NM_CLICK, IDC_LIST_TCP, OnClickListTcp)
 	ON_NOTIFY(NM_CLICK, IDC_LIST_IP, OnClickListIp)
@@ -163,6 +164,8 @@ ON_WM_NCPAINT()
 	ON_BN_CLICKED(IDC_CHECK_TCP, &CProtocolAnalysisDlg::OnBnClickedCheckTcp)
 	ON_BN_CLICKED(IDC_CHECK_UDP, &CProtocolAnalysisDlg::OnBnClickedCheckUdp)
 	ON_BN_CLICKED(IDC_SETGAME, &CProtocolAnalysisDlg::OnBnClickedSetgame)
+	ON_COMMAND(ID_RCLIK_SAVEDATA, &CProtocolAnalysisDlg::OnRclikSavedata)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST_COM, &CProtocolAnalysisDlg::OnLvnItemchangedListCom)
 END_MESSAGE_MAP()
 // CProtocolAnalysisDlg message handlers
 
@@ -277,8 +280,9 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_list_common.InsertColumn(5, "源端口", LVCFMT_LEFT, 300, 1);
 	m_list_common.InsertColumn(6, "目的IP", LVCFMT_LEFT, 300, 1);
 	m_list_common.InsertColumn(7, "目的端口", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(8, "size", LVCFMT_RIGHT, 300, 1);
-	m_list_common.InsertColumn(9, "数据区", LVCFMT_LEFT, -1, 1);
+	m_list_common.InsertColumn(8, "time", LVCFMT_RIGHT, 300, 1);
+	m_list_common.InsertColumn(9, "size", LVCFMT_RIGHT, 300, 1);
+	m_list_common.InsertColumn(10, "数据区", LVCFMT_LEFT, -1, 1);
 	m_list_common.SetColumnWidth(0, 40);
 	m_list_common.SetColumnWidth(1, 120);
 	m_list_common.SetColumnWidth(2, 120);
@@ -288,6 +292,7 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_list_common.SetColumnWidth(6, 110);
 	m_list_common.SetColumnWidth(7, 60);
 	m_list_common.SetColumnWidth(8, 60);
+	m_list_common.SetColumnWidth(9, 60);
 	ListView_SetExtendedListViewStyle(m_list_common.m_hWnd,
 		LVS_EX_FULLROWSELECT |
 		LVS_EX_FLATSB |
@@ -723,12 +728,33 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	m_list_common.SetItemText(nIdx, 5, pi->SourcePort);
 	m_list_common.SetItemText(nIdx, 6, pi->DestinationAddr);
 	m_list_common.SetItemText(nIdx, 7, pi->DestinationPort);
+	COleDateTime dt = COleDateTime::GetCurrentTime();
+	CString sTime = dt.Format("%H:%M:%S");
+	m_list_common.SetItemText(nIdx, 8, (LPCTSTR)sTime);
 	char sText[200] = {0};
 	int nsize = 100;
-	CMyAnalysiser::GetInstance()->DispBuffer(prp, sText, nsize);
+	if(CMyAnalysiser::GetInstance()->DispBuffer(prp, sText, nsize))
+	{
+		if (IDYES == AfxGetMainWnd()->MessageBox("pack 5 finded, will be break?", str, MB_YESNO))
+		{
+			if (g_StopThread == TRUE)
+			{
+				return 0;
+			}
+			g_StopThread = TRUE;
+			CButton *p=(CButton*)GetDlgItem (IDC_BUTTON_END);
+			p->EnableWindow (FALSE);
+			CMenu *pp=(CMenu *)GetMenu();
+			pp->EnableMenuItem (MENU_STOP,TRUE);
+			CButton *p2=(CButton*)GetDlgItem (IDC_BUTTON_START);
+			p2->EnableWindow (TRUE);
+			CMenu *pp2=(CMenu *)GetMenu();
+			pp2->EnableMenuItem (MENU_START,FALSE);
+		}	
+	}
 	sprintf(str, "0x%x", nsize);
-	m_list_common.SetItemText(nIdx, 8, str);
-	m_list_common.SetItemText(nIdx, 9, sText);
+	m_list_common.SetItemText(nIdx, 9, str);
+	m_list_common.SetItemText(nIdx, 10, sText);
 
 	if (prp->pPacketInfo)
 	{	
@@ -2528,4 +2554,54 @@ void CProtocolAnalysisDlg::OnBnClickedSetgame()
 	// TODO: Add your control notification handler code here
 	SetDlgItemText(IDC_EDIT_MONITORPNAME, "");
 	SetDlgItemText(IDC_EDIT_MONITORPNAME, "tslgame.exe");
+}
+
+
+void CProtocolAnalysisDlg::OnRclikSavedata()
+{
+	// TODO: Add your command handler code here
+	map<int, RAW_PACKET*> dataArr;
+	for (POSITION pos = m_pCurrentList->GetFirstSelectedItemPosition(); pos != NULL; )
+	{
+		int nidx = m_pCurrentList->GetNextSelectedItem(pos);
+		RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_pCurrentList->GetItemData(nidx));
+		dataArr[nidx] = pRawPacket;
+	}
+
+	if (dataArr.size() > 0)
+	{
+		CSaveDataDlg dlg;
+		dlg.InitData(&dataArr);
+		dlg.DoModal();
+	}
+}
+
+
+void CProtocolAnalysisDlg::OnLvnItemchangedListCom(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: Add your control notification handler code here
+	*pResult = 0;
+
+	int nItem = pNMLV->iItem;
+	if (nItem == -1)
+		return ;
+
+	if (pNMLV->uOldState != 0)
+	{
+		return;
+	}
+
+	if ((pNMLV->uNewState & LVIS_SELECTED) != LVIS_SELECTED)
+	{
+		return;
+	}
+
+	RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_list_common.GetItemData(nItem));
+	ShowPacketInfo(pRawPacket);
+	UpdateData(FALSE);	
+
+
+
+
 }

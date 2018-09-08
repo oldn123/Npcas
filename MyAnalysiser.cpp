@@ -153,14 +153,16 @@ bool CMyAnalysiser::OnPackageCome(int nPackageType, PacketInformation* pi, RAW_P
 		{
 			if (bsendmode)
 			{
-				if (!m_monitorPorts_tcp.count(atoi(pi->SourcePort)))
+				int nport = atoi(pi->SourcePort);
+				if (!m_monitorPorts_tcp.count(nport) || !m_monitorPorts_tcp[nport])
 				{
 					return false;
 				}
 			}
 			else if (brecvmode)
 			{
-				if (!m_monitorPorts_tcp.count(atoi(pi->DestinationPort)))
+				int nport = atoi(pi->DestinationPort);
+				if (!m_monitorPorts_tcp.count(nport) || !m_monitorPorts_tcp[nport])
 				{
 					return false;
 				}
@@ -218,9 +220,44 @@ string Utf82Ansi(const char* srcCode)
 	return srcAnsiCode;
 }
 
-
-void CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
+bool CMyAnalysiser::SaveBuffer(char * sfile, RAW_PACKET* pPacket, int noffset, int ndatasize)
 {
+	FILE * fp = fopen(sfile, "wb");
+	if (fp)
+	{
+		int nsize = ndatasize < 0 ? pPacket->PktHeader.len - noffset: 
+			pPacket->PktHeader.len  - noffset < ndatasize ? pPacket->PktHeader.len  - noffset: ndatasize;
+
+		unsigned char * pbuf = pPacket->pPktData;
+		if (IsUdpPackage(pPacket))
+		{
+			pbuf = pPacket->pPktData + 0x2A;
+			nsize = pPacket->PktHeader.len - 0x2A;
+			nsize -= noffset;
+			nsize = ndatasize < 0 ? nsize : 
+				nsize < ndatasize ? nsize : ndatasize;
+		}
+		else if (IsTcpPackage(pPacket))
+		{
+			pbuf = pPacket->pPktData + 0x36;
+			nsize = pPacket->PktHeader.len - 0x36;
+			nsize -= noffset;
+			nsize = ndatasize < 0 ? nsize : 
+				nsize < ndatasize ? nsize : ndatasize;
+		}
+		
+		fwrite(&pbuf[noffset], 1, nsize, fp);
+		fclose(fp);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
+{
+	bool bWillbreak = false;
 	int nzInput = nsize - 1;	
 	if (IsUdpPackage(pPacket))
 	{
@@ -264,6 +301,26 @@ void CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
 					sJson = jsoncode;//Utf82Ansi(jsoncode);
 					pSt = (char*)sJson.c_str();
 				}
+				else
+				{
+					bJson = pbuf[0]==0x81&&pbuf[1]==0x2f&&pbuf[2]=='{';
+					if (bJson)
+					{
+						char jsoncode[500] = {0};
+						memcpy(&jsoncode[0], &pbuf[2], nsize - 2 > nzInput ? nzInput : nsize - 2);
+						sJson = jsoncode;//Utf82Ansi(jsoncode);
+						pSt = (char*)sJson.c_str();
+					}
+				}
+
+				if (bJson)
+				{
+					char* pfind = strstr((char*)&pbuf[2], "{\"pack_type\":5,");
+					if (pfind)
+					{
+						bWillbreak = true;
+					}
+				}
 			}
 			strcat(_pbuf, pSt);
 		}
@@ -271,6 +328,8 @@ void CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
 		nzInput -= n;
 		hextostr(&_pbuf[n], pbuf, nsize < nzInput ? nsize : nzInput);
 	}
+
+	return bWillbreak;
 }
 
 bool CMyAnalysiser::IsDstIpInIgnore(const char * ip)

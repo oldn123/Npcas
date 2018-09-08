@@ -66,6 +66,9 @@
     <ClCompile Include="rtmp\PacketOrderer.cpp">
       <Filter>rtmp</Filter>
     </ClCompile>
+    <ClCompile Include="SaveDataDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sniffer.h">
@@ -127,6 +130,9 @@
     </ClInclude>
     <ClInclude Include="rtmp\PacketOrderer.h">
       <Filter>rtmp</Filter>
+    </ClInclude>
+    <ClInclude Include="SaveDataDlg.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

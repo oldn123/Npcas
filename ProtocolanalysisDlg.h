@@ -179,6 +179,8 @@ public:
 	afx_msg void OnBnClickedCheckTcp();
 	afx_msg void OnBnClickedCheckUdp();
 	afx_msg void OnBnClickedSetgame();
+	afx_msg void OnRclikSavedata();
+	afx_msg void OnLvnItemchangedListCom(NMHDR *pNMHDR, LRESULT *pResult);
 };
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.

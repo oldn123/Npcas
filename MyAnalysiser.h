@@ -32,8 +32,8 @@ public:
 	void	SetPackageDir(bool bSend, bool bRecv){m_bSend = bSend; m_bRecv = bRecv;}
 	void	SetLocalAddr(const char * addr){m_myAddr = addr;}
 
-	void	DispBuffer(RAW_PACKET* pPacket, char * pbuf, int & nsize);
-
+	bool	DispBuffer(RAW_PACKET* pPacket, char * pbuf, int & nsize);
+	bool	SaveBuffer(char * sfile, RAW_PACKET* pPacket, int noffset, int ndatasize);
 protected:
 	RtmpPacket::RtmpDataTypes OnTcp(unsigned char * pbuf,	int nSize);
 
