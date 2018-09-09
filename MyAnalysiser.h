@@ -34,6 +34,7 @@ public:
 
 	bool	DispBuffer(RAW_PACKET* pPacket, char * pbuf, int & nsize);
 	bool	SaveBuffer(char * sfile, RAW_PACKET* pPacket, int noffset, int ndatasize);
+	bool	SaveBuffer(char * sfile, map<int, RAW_PACKET* > * pPacket, int noffset, int ndatasize);
 protected:
 	RtmpPacket::RtmpDataTypes OnTcp(unsigned char * pbuf,	int nSize);
 

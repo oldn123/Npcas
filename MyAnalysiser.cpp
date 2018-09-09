@@ -220,6 +220,48 @@ string Utf82Ansi(const char* srcCode)
 	return srcAnsiCode;
 }
 
+bool CMyAnalysiser::SaveBuffer(char * sfile, map<int, RAW_PACKET* > * pPacketMap, int noffset, int ndatasize)
+{
+	auto iter = pPacketMap->begin();
+	RAW_PACKET* pPacket = iter->second;
+	FILE * fp = fopen(sfile, "wb");
+	if (fp)
+	{
+		int nsize = ndatasize < 0 ? pPacket->PktHeader.len - noffset: 
+			pPacket->PktHeader.len  - noffset < ndatasize ? pPacket->PktHeader.len  - noffset: ndatasize;
+
+		unsigned char * pbuf = pPacket->pPktData;
+		if (IsUdpPackage(pPacket))
+		{
+			pbuf = pPacket->pPktData + 0x2A;
+			nsize = pPacket->PktHeader.len - 0x2A;
+			nsize -= noffset;
+			nsize = ndatasize < 0 ? nsize : 
+				nsize < ndatasize ? nsize : ndatasize;
+		}
+		else if (IsTcpPackage(pPacket))
+		{
+			pbuf = pPacket->pPktData + 0x36;
+			nsize = pPacket->PktHeader.len - 0x36;
+			nsize -= noffset;
+			nsize = ndatasize < 0 ? nsize : 
+				nsize < ndatasize ? nsize : ndatasize;
+		}
+
+		fwrite(&pbuf[noffset], 1, nsize, fp);
+		iter++;
+		for (; iter != pPacketMap->end(); iter++)
+		{
+			fwrite(iter->second->pPktData, 1, iter->second->PktHeader.len, fp);
+		}
+		fclose(fp);
+
+		return true;
+	}
+
+	return false;
+}
+
 bool CMyAnalysiser::SaveBuffer(char * sfile, RAW_PACKET* pPacket, int noffset, int ndatasize)
 {
 	FILE * fp = fopen(sfile, "wb");

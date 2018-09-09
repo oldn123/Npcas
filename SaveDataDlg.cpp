@@ -70,15 +70,30 @@ void CSaveDataDlg::OnBnClickedOk()
 	str.Replace(" ", "");
 	str.Replace("\n", "");
 	bool bHasErr = false;
-	for (auto iter = m_pInitData->begin(); iter != m_pInitData->end(); iter++)
-	{
-		char sfile[260] = {0};
-		sprintf(sfile, "%s\\%s_%d.dat", sPath, str, iter->first);
 
-		if(!CMyAnalysiser::GetInstance()->SaveBuffer(sfile, iter->second, nOffset, nsize))
+	if (IsDlgButtonChecked(IDC_CHECK_UNION))
+	{
+		auto iter = m_pInitData->begin();
+		char sfile[260] = {0};
+		sprintf(sfile, "%s\\%s_%d__.dat", sPath, str, iter->first);
+
+		if(!CMyAnalysiser::GetInstance()->SaveBuffer(sfile, m_pInitData, nOffset, nsize))
 		{
 			bHasErr = true;
-			break;
+		}
+	}
+	else
+	{
+		for (auto iter = m_pInitData->begin(); iter != m_pInitData->end(); iter++)
+		{
+			char sfile[260] = {0};
+			sprintf(sfile, "%s\\%s_%d.dat", sPath, str, iter->first);
+
+			if(!CMyAnalysiser::GetInstance()->SaveBuffer(sfile, iter->second, nOffset, nsize))
+			{
+				bHasErr = true;
+				break;
+			}
 		}
 	}
 	
