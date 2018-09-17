@@ -20,11 +20,14 @@ class CProtocolAnalysisDlg : public CDialog
 	
 	// Construction
 public:
+	void OnRecvMsg(char * pbuf, int nsize);
+
 	void ShowPacketInfo(RAW_PACKET* pRawPacket);//显示包信息
 	bool m_SaveDumpFile;// 是否保存捕获到数据包的堆文件
 	CString m_strfileNamePath; // 需要保存的文件路径(包括文件名)
 	CString m_strFilePath;//需要保存的文件路径
 	CProtocolAnalysisDlg(CWnd* pParent = NULL);	
+	~CProtocolAnalysisDlg();
 	void DrawTitleBar(CDC* pDC);
 	// 任务托盘
 	LRESULT OnTrayCallBackMsg(WPARAM wparam, LPARAM lparam);

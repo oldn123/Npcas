@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "Protocolanalysis.h"
 #include "ProtocolanalysisDlg.h"
 #include "helpdialog.h"
@@ -7,6 +7,8 @@
 #include "sniffer.h"
 #include "MyAnalysiser.h"
 #include "SaveDataDlg.h"
+
+#include "..\nox\include\dataDef.h"
 
 #include <IPHlpApi.h>  
 using namespace std;
@@ -18,7 +20,7 @@ using namespace std;
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
-#define BUFFER_MAX_LENGTH 65536 /* »º³åÇø×î´ó³¤¶È*/
+#define BUFFER_MAX_LENGTH 65536 /* ç¼“å†²åŒºæœ€å¤§é•¿åº¦*/
 char g_PacketFilter[1024];
 //extern  PacketInformation g_packet;
 extern EtherHeader g_DisplayEthernet;
@@ -34,10 +36,10 @@ extern CProtocolAnalysisDlg *g_pdlg;
 bool g_StopThread = TRUE;
 HWND g_hWnd;
 ProtocolNumber PacketNumber;
-/*Ò»ÏÂÎª¶¯Ì¬Á´½Ó¿â,¼ÓÔØÆ¤·ô¿âµÄº¯Êı*/
-/*ºê¶¨Òåº¯ÊıÖ¸ÕëÀàĞÍ */
+/*ä¸€ä¸‹ä¸ºåŠ¨æ€é“¾æ¥åº“,åŠ è½½çš®è‚¤åº“çš„å‡½æ•°*/
+/*å®å®šä¹‰å‡½æ•°æŒ‡é’ˆç±»å‹ */
 typedef int ( WINAPI *SKINH_ATTACHEX)(LPCTSTR strSkinFile,LPCTSTR strPassword);
-// È¡µÃSKINH_ATTACHEXº¯ÊıµÄµØÖ·
+// å–å¾—SKINH_ATTACHEXå‡½æ•°çš„åœ°å€
 SKINH_ATTACHEX pSkinFun = (SKINH_ATTACHEX)::GetProcAddress(LoadLibrary("config\\SkinH.dll"),
 														   "SkinH_AttachEx");
 // CProtocolAnalysisDlg dialog
@@ -48,17 +50,17 @@ CProtocolAnalysisDlg::CProtocolAnalysisDlg(CWnd* pParent /*=NULL*/) : CDialog(CP
 	//}}AFX_DATA_INIT
 	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-	m_SaveDumpFile=true;//³õÊ¼²»±£´æÎÄ¼ş
-	//³õÊÔ»¯²¶»ñµÄÊı¾İ°üµÄ¸öÊıÎª0
+	m_SaveDumpFile=true;//åˆå§‹ä¸ä¿å­˜æ–‡ä»¶
+	//åˆè¯•åŒ–æ•è·çš„æ•°æ®åŒ…çš„ä¸ªæ•°ä¸º0
 	m_nPacket=m_nArp=m_nIp=m_nHttp=m_nDns=0;
 	m_Ethernet=m_nTcp=m_nUdp=m_nIcmp=0;
 	m_pCurrentList = &m_list_common;
 	m_pThread = NULL;
 	m_nItem=m_iSubItem=-1;
-	//È¡µÃÓ¦ÓÃ³ÌĞòµ±Ç°Â·¾¶(µ±´ò¿ªÆäËû´°¿ÚÊ±µ±Ç°³ÌĞòÂ·¾¶»á±ä,ËùÒÔ³õÊÔ»¯Ê±¾Í»ñµÃÎÄ¼şµ±Ç°Â·¾¶)
+	//å–å¾—åº”ç”¨ç¨‹åºå½“å‰è·¯å¾„(å½“æ‰“å¼€å…¶ä»–çª—å£æ—¶å½“å‰ç¨‹åºè·¯å¾„ä¼šå˜,æ‰€ä»¥åˆè¯•åŒ–æ—¶å°±è·å¾—æ–‡ä»¶å½“å‰è·¯å¾„)
 	char appPath[256]={'\0'};
 	::GetCurrentDirectory(256, appPath);
-	//Â·¾¶
+	//è·¯å¾„
 	m_strFilePath.Format("%s",appPath);
 }
 void CProtocolAnalysisDlg::DoDataExchange(CDataExchange* pDX)
@@ -171,9 +173,9 @@ END_MESSAGE_MAP()
 
 bool getAdapterState(DWORD index)
 {
-	MIB_IFROW Info;    // ´æ·Å»ñÈ¡µ½µÄAdapter²ÎÊı
+	MIB_IFROW Info;    // å­˜æ”¾è·å–åˆ°çš„Adapterå‚æ•°
 	memset(&Info, 0, sizeof(MIB_IFROW));
-	Info.dwIndex = index; // dwIndexÊÇĞèÒª»ñÈ¡µÄAdapterµÄË÷Òı£¬¿ÉÒÔÍ¨¹ıGetAdaptersInfoºÍÆäËûÏà¹Øº¯Êı»ñÈ¡
+	Info.dwIndex = index; // dwIndexæ˜¯éœ€è¦è·å–çš„Adapterçš„ç´¢å¼•ï¼Œå¯ä»¥é€šè¿‡GetAdaptersInfoå’Œå…¶ä»–ç›¸å…³å‡½æ•°è·å–
 	if (GetIfEntry(&Info) != NOERROR)
 	{
 		return false;
@@ -207,24 +209,24 @@ int getLocalInfo(char * mac, char * ipMe)
 		IP_ADDR_STRING *pIpAddrString = &(pIOInfo->IpAddressList);
 		if (bGetOK || !getAdapterState(pIOInfo->Index))
 		{
-			//ÍøÂçÎ´Á¬½Ó
+			//ç½‘ç»œæœªè¿æ¥
 			pIOInfo = pIOInfo->Next;
 			continue;
 		}
 
 		{	
-			if (/*strstr(pIOInfo->Description, "PCI")>0 &&*/ pIOInfo->Type == MIB_IF_TYPE_ETHERNET) //ÓĞÏßÍø¿ÉÓÃÊ±Ö±½Ó·µ»Ø
+			if (/*strstr(pIOInfo->Description, "PCI")>0 &&*/ pIOInfo->Type == MIB_IF_TYPE_ETHERNET) //æœ‰çº¿ç½‘å¯ç”¨æ—¶ç›´æ¥è¿”å›
 			{
 				bGetOK = true;
 			}	
-			else if (pIOInfo->Type == 71)	//ÎŞÏßÍøÂç
+			else if (pIOInfo->Type == 71)	//æ— çº¿ç½‘ç»œ
 			{
 				bGetOK = true;
 			}
 
 			if (bGetOK)
 			{
-				//½ö¿¼ÂÇÓĞÏßÍøÂçÓëÎŞÏßÍøÂç
+				//ä»…è€ƒè™‘æœ‰çº¿ç½‘ç»œä¸æ— çº¿ç½‘ç»œ
 				strcpy(ipMe, pIpAddrString->IpAddress.String);
 				sprintf(mac, "%2x:%2x:%2x:%2x:%2x:%2x", pIOInfo->Address[0], pIOInfo->Address[1], pIOInfo->Address[2],
 					pIOInfo->Address[3], pIOInfo->Address[4], pIOInfo->Address[5]);
@@ -239,9 +241,61 @@ int getLocalInfo(char * mac, char * ipMe)
 
 extern int do_test();
 
+
+
+bool g_bquit = false;
+
+CProtocolAnalysisDlg::~CProtocolAnalysisDlg(){
+	g_bquit = true;
+}
+
+unsigned __stdcall ThreadStaticEntryPoint(void* pParam)
+{
+	CProtocolAnalysisDlg * pThis = (CProtocolAnalysisDlg *)pParam;
+	//sendtoä¸­ä½¿ç”¨çš„å¯¹æ–¹åœ°å€
+	struct sockaddr_in toAddr;
+	//åœ¨recvfromä¸­ä½¿ç”¨çš„å¯¹æ–¹ä¸»æœºåœ°å€
+	struct sockaddr_in fromAddr;
+	int recvLen;
+	int addrLen = 0;
+	char recvBuffer[4096] = {0};
+	int sockMsg = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
+	if(sockMsg < 0)
+	{
+		return 0;
+	}
+
+	memset(&fromAddr,0,sizeof(fromAddr));
+	fromAddr.sin_family=AF_INET;
+	fromAddr.sin_addr.s_addr=htonl(INADDR_ANY);
+	fromAddr.sin_port = htons(4012);
+	if(bind(sockMsg,(struct sockaddr*)&fromAddr,sizeof(fromAddr))<0)
+	{
+		AfxMessageBox("ç«¯å£ç»‘å®šå¤±è´¥");
+		closesocket(sockMsg);
+		return 0;
+	}
+	while(!g_bquit){
+		addrLen = sizeof(toAddr);
+		memset(recvBuffer, 0, 4096);
+		if((recvLen = recvfrom(sockMsg,recvBuffer,4096,0,(struct sockaddr*)&toAddr,&addrLen)) > 0)
+		{
+			pThis->OnRecvMsg(recvBuffer, recvLen);
+		}
+
+		Sleep(500);
+	}
+	return 1;//Â theÂ threadÂ exitÂ code
+}
+
 BOOL CProtocolAnalysisDlg::OnInitDialog()
 {	
-	//do_test();
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(1,1), &wsaData);
+
+	unsigned int dwThread = 0;
+	HANDLE hth1 = (HANDLE)_beginthreadex(NULL,0, ThreadStaticEntryPoint,this,CREATE_SUSPENDED,&dwThread);
+	ResumeThread(hth1);
 
 	CDialog::OnInitDialog();
 	AfxGetMainWnd()->CenterWindow(); 
@@ -263,26 +317,26 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 	if(pSkinFun)
 	{
-		// ¼ÓÔØÆ¤·ôÎÄ¼ş
+		// åŠ è½½çš®è‚¤æ–‡ä»¶
 		///pSkinFun(_T("skin\\pixos.she"), NULL);
 	}
 	else
 	{
-		MessageBox(_T("Æ¤·ô¿â¼ÓÔØÊ§°Ü!"),_T("È±ÉÙSkinH.dll"));
+		MessageBox(_T("çš®è‚¤åº“åŠ è½½å¤±è´¥!"),_T("ç¼ºå°‘SkinH.dll"));
 	}
 	UpdateData(TRUE);
 	UpdateData(FALSE);
-	m_list_common.InsertColumn(0, "ĞòºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(1, "Ô´MAC", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(2, "Ä¿µÄMAC", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(3, "Ğ­ÒéÀàĞÍ", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(4, "Ô´IP", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(5, "Ô´¶Ë¿Ú", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(6, "Ä¿µÄIP", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(7, "Ä¿µÄ¶Ë¿Ú", LVCFMT_LEFT, 300, 1);
+	m_list_common.InsertColumn(0, "åºå·", LVCFMT_LEFT, 300, 1);
+	m_list_common.InsertColumn(1, "æºMAC", LVCFMT_LEFT, 300, 1);
+	m_list_common.InsertColumn(2, "ç›®çš„MAC", LVCFMT_LEFT, 300, 1);
+	m_list_common.InsertColumn(3, "åè®®ç±»å‹", LVCFMT_LEFT, 300, 1);
+	m_list_common.InsertColumn(4, "æºIP", LVCFMT_LEFT, 300, 1);
+	m_list_common.InsertColumn(5, "æºç«¯å£", LVCFMT_LEFT, 300, 1);
+	m_list_common.InsertColumn(6, "ç›®çš„IP", LVCFMT_LEFT, 300, 1);
+	m_list_common.InsertColumn(7, "ç›®çš„ç«¯å£", LVCFMT_LEFT, 300, 1);
 	m_list_common.InsertColumn(8, "time", LVCFMT_RIGHT, 300, 1);
 	m_list_common.InsertColumn(9, "size", LVCFMT_RIGHT, 300, 1);
-	m_list_common.InsertColumn(10, "Êı¾İÇø", LVCFMT_LEFT, -1, 1);
+	m_list_common.InsertColumn(10, "æ•°æ®åŒº", LVCFMT_LEFT, -1, 1);
 	m_list_common.SetColumnWidth(0, 40);
 	m_list_common.SetColumnWidth(1, 120);
 	m_list_common.SetColumnWidth(2, 120);
@@ -299,10 +353,10 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 		LVS_EX_GRIDLINES |
 		LVS_EX_HEADERDRAGDROP);
 
-	m_list_ethernet.InsertColumn(0, "ĞòºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_ethernet.InsertColumn(1, "Ô´MACµØÖ·", LVCFMT_LEFT, 300, 1);
-	m_list_ethernet.InsertColumn(2, "Ä¿µÄMACµØÖ·", LVCFMT_LEFT, 300, 1);
-	m_list_ethernet.InsertColumn(3, "Ğ­ÒéÀàĞÍ", LVCFMT_LEFT, 300, 1);
+	m_list_ethernet.InsertColumn(0, "åºå·", LVCFMT_LEFT, 300, 1);
+	m_list_ethernet.InsertColumn(1, "æºMACåœ°å€", LVCFMT_LEFT, 300, 1);
+	m_list_ethernet.InsertColumn(2, "ç›®çš„MACåœ°å€", LVCFMT_LEFT, 300, 1);
+	m_list_ethernet.InsertColumn(3, "åè®®ç±»å‹", LVCFMT_LEFT, 300, 1);
 	m_list_ethernet.SetColumnWidth(0, 40);
 	m_list_ethernet.SetColumnWidth(1, 120);
 	m_list_ethernet.SetColumnWidth(2, 120);
@@ -314,15 +368,15 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 		LVS_EX_GRIDLINES |
 		LVS_EX_HEADERDRAGDROP);
 
-	m_list_arp.InsertColumn(0, "ĞòºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_arp.InsertColumn(1, "Ó²¼şµØÖ·ÀàĞÍ", LVCFMT_LEFT, 300, 1);
-	m_list_arp.InsertColumn(2, "Ğ­ÒéµØÖ·ÀàĞÍ", LVCFMT_LEFT, 300, 1);
-	m_list_arp.InsertColumn(3, "Ó²¼şµØÖ·³¤¶È", LVCFMT_LEFT, 300, 1);
-	m_list_arp.InsertColumn(4, "Ğ­ÒéµØÖ·³¤¶È", LVCFMT_LEFT, 300, 1);
-	m_list_arp.InsertColumn(5, "ARP²Ù×÷", LVCFMT_LEFT, 300, 1);
-	m_list_arp.InsertColumn(6, "±¸×¢", LVCFMT_LEFT, 300, 1);
-	m_list_arp.InsertColumn(7, "·¢ËÍ¶ËIP", LVCFMT_LEFT, 300, 1);
-	m_list_arp.InsertColumn(8, "Ä¿µÄ¶ËIp", LVCFMT_LEFT, 300, 1);
+	m_list_arp.InsertColumn(0, "åºå·", LVCFMT_LEFT, 300, 1);
+	m_list_arp.InsertColumn(1, "ç¡¬ä»¶åœ°å€ç±»å‹", LVCFMT_LEFT, 300, 1);
+	m_list_arp.InsertColumn(2, "åè®®åœ°å€ç±»å‹", LVCFMT_LEFT, 300, 1);
+	m_list_arp.InsertColumn(3, "ç¡¬ä»¶åœ°å€é•¿åº¦", LVCFMT_LEFT, 300, 1);
+	m_list_arp.InsertColumn(4, "åè®®åœ°å€é•¿åº¦", LVCFMT_LEFT, 300, 1);
+	m_list_arp.InsertColumn(5, "ARPæ“ä½œ", LVCFMT_LEFT, 300, 1);
+	m_list_arp.InsertColumn(6, "å¤‡æ³¨", LVCFMT_LEFT, 300, 1);
+	m_list_arp.InsertColumn(7, "å‘é€ç«¯IP", LVCFMT_LEFT, 300, 1);
+	m_list_arp.InsertColumn(8, "ç›®çš„ç«¯Ip", LVCFMT_LEFT, 300, 1);
 	m_list_arp.SetColumnWidth(0, 40);
 	m_list_arp.SetColumnWidth(1, 86);
 	m_list_arp.SetColumnWidth(2, 86);
@@ -338,19 +392,19 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 		LVS_EX_FLATSB |
 		LVS_EX_HEADERDRAGDROP);
 
-	m_list_ip.InsertColumn(0, "ĞòºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(1, "Ğ­Òé°æ±¾", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(2, "Ê×²¿³¤¶È", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(3, "·şÎñÖÊÁ¿", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(4, "IP³¤¶È", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(5, "IDºÅ(±êÊ¶)", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(6, "±êÖ¾", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(7, "Æ«ÒÆÁ¿", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(8, "Éú´æÖÜÆÚ", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(9, "Ğ­ÒéÀàĞÍ", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(10, "Ğ£ÑéºÍ", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(11, "Ô´IPµØÖ·", LVCFMT_LEFT, 300, 1);
-	m_list_ip.InsertColumn(12, "Ä¿µÄIPµØÖ·", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(0, "åºå·", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(1, "åè®®ç‰ˆæœ¬", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(2, "é¦–éƒ¨é•¿åº¦", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(3, "æœåŠ¡è´¨é‡", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(4, "IPé•¿åº¦", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(5, "IDå·(æ ‡è¯†)", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(6, "æ ‡å¿—", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(7, "åç§»é‡", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(8, "ç”Ÿå­˜å‘¨æœŸ", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(9, "åè®®ç±»å‹", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(10, "æ ¡éªŒå’Œ", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(11, "æºIPåœ°å€", LVCFMT_LEFT, 300, 1);
+	m_list_ip.InsertColumn(12, "ç›®çš„IPåœ°å€", LVCFMT_LEFT, 300, 1);
 	m_list_ip.SetColumnWidth(0, 40);
 	m_list_ip.SetColumnWidth(1, 120);
 	m_list_ip.SetColumnWidth(2, 120);
@@ -369,11 +423,11 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 		LVS_EX_GRIDLINES |
 		LVS_EX_FLATSB |
 		LVS_EX_HEADERDRAGDROP);
-	m_list_icmp.InsertColumn(0, "ĞòºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_icmp.InsertColumn(1, "ÀàĞÍ", LVCFMT_LEFT, 300, 1);
-	m_list_icmp.InsertColumn(2, "´úÂë", LVCFMT_LEFT, 300, 1);
-	m_list_icmp.InsertColumn(3, "Ğ£ÑéºÍ", LVCFMT_LEFT, 300, 1);
-	m_list_icmp.InsertColumn(4, "ËµÃ÷", LVCFMT_LEFT, 300, 1);
+	m_list_icmp.InsertColumn(0, "åºå·", LVCFMT_LEFT, 300, 1);
+	m_list_icmp.InsertColumn(1, "ç±»å‹", LVCFMT_LEFT, 300, 1);
+	m_list_icmp.InsertColumn(2, "ä»£ç ", LVCFMT_LEFT, 300, 1);
+	m_list_icmp.InsertColumn(3, "æ ¡éªŒå’Œ", LVCFMT_LEFT, 300, 1);
+	m_list_icmp.InsertColumn(4, "è¯´æ˜", LVCFMT_LEFT, 300, 1);
 	m_list_icmp.SetColumnWidth(0, 40);
 	m_list_icmp.SetColumnWidth(1, 120);
 	m_list_icmp.SetColumnWidth(2, 120);
@@ -385,17 +439,17 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 		LVS_EX_FLATSB |
 		LVS_EX_HEADERDRAGDROP);
 	
-	m_list_tcp.InsertColumn(0, "ĞòºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(1, "Ô´¶Ë¿Ú", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(2, "Ä¿µÄ¶Ë¿Ú", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(3, "ĞòÁĞºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(4, "È·ÈÏºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(5, "Ê×²¿³¤¶È", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(6, "±£Áô", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(7, "±êÖ¾", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(8, "´°¿Ú", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(9, "Ğ£ÑéºÍ", LVCFMT_LEFT, 300, 1);
-	m_list_tcp.InsertColumn(10, "½ô¼±Ö¸Õë", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(0, "åºå·", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(1, "æºç«¯å£", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(2, "ç›®çš„ç«¯å£", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(3, "åºåˆ—å·", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(4, "ç¡®è®¤å·", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(5, "é¦–éƒ¨é•¿åº¦", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(6, "ä¿ç•™", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(7, "æ ‡å¿—", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(8, "çª—å£", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(9, "æ ¡éªŒå’Œ", LVCFMT_LEFT, 300, 1);
+	m_list_tcp.InsertColumn(10, "ç´§æ€¥æŒ‡é’ˆ", LVCFMT_LEFT, 300, 1);
 	m_list_tcp.SetColumnWidth(0, 40);
 	m_list_tcp.SetColumnWidth(1, 120);
 	m_list_tcp.SetColumnWidth(2, 120);
@@ -412,11 +466,11 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 		LVS_EX_GRIDLINES |
 		LVS_EX_FLATSB |
 		LVS_EX_HEADERDRAGDROP);
-	m_list_udp.InsertColumn(0, "ĞòºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_udp.InsertColumn(1, "Ô´¶Ë¿Ú", LVCFMT_LEFT, 300, 1);
-	m_list_udp.InsertColumn(2, "Ä¿µÄ¶Ë¿Ú", LVCFMT_LEFT, 300, 1);
-	m_list_udp.InsertColumn(3, "³¤¶È", LVCFMT_LEFT, 300, 1);
-	m_list_udp.InsertColumn(4, "Ğ£ÑéºÍ", LVCFMT_LEFT, 300, 1);
+	m_list_udp.InsertColumn(0, "åºå·", LVCFMT_LEFT, 300, 1);
+	m_list_udp.InsertColumn(1, "æºç«¯å£", LVCFMT_LEFT, 300, 1);
+	m_list_udp.InsertColumn(2, "ç›®çš„ç«¯å£", LVCFMT_LEFT, 300, 1);
+	m_list_udp.InsertColumn(3, "é•¿åº¦", LVCFMT_LEFT, 300, 1);
+	m_list_udp.InsertColumn(4, "æ ¡éªŒå’Œ", LVCFMT_LEFT, 300, 1);
 	m_list_udp.SetColumnWidth(0, 40);
 	m_list_udp.SetColumnWidth(1, 120);
 	m_list_udp.SetColumnWidth(2, 120);
@@ -428,10 +482,10 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 		LVS_EX_FLATSB |
 		LVS_EX_HEADERDRAGDROP);
 
-	m_list_http.InsertColumn(0, "ĞòºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_http.InsertColumn(1, "Ô´IPµØÖ·", LVCFMT_LEFT, 300, 1);
-	m_list_http.InsertColumn(2, "Ä¿µÄIPµØÖ·", LVCFMT_LEFT, 300, 1);
-	m_list_http.InsertColumn(3, "ĞÅÏ¢", LVCFMT_LEFT, 300, 1);
+	m_list_http.InsertColumn(0, "åºå·", LVCFMT_LEFT, 300, 1);
+	m_list_http.InsertColumn(1, "æºIPåœ°å€", LVCFMT_LEFT, 300, 1);
+	m_list_http.InsertColumn(2, "ç›®çš„IPåœ°å€", LVCFMT_LEFT, 300, 1);
+	m_list_http.InsertColumn(3, "ä¿¡æ¯", LVCFMT_LEFT, 300, 1);
 	m_list_http.SetColumnWidth(0, 40);
 	m_list_http.SetColumnWidth(1, 140);
 	m_list_http.SetColumnWidth(2, 140);
@@ -442,20 +496,20 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 		LVS_EX_FLATSB |
 		LVS_EX_HEADERDRAGDROP);
 
-	m_list_Dns.InsertColumn(0, "ĞòºÅ", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(1, "±êÊ¶", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(2, "QR(±êÖ¾)", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(3, "opcode(±êÖ¾)", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(4, "AA(±êÖ¾)", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(5, "TC(±êÖ¾)", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(6, "RD(±êÖ¾)", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(7, "RA(±êÖ¾)", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(8, "zero(±êÖ¾)", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(9, "rcode(±êÖ¾)", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(10, "ÎÊÌâÊı", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(11, "×ÊÔ´¼ÇÂ¼Êı", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(12, "ÊÚÈ¨×ÊÔ´¼ÇÂ¼Êı", LVCFMT_LEFT, 300, 1);
-	m_list_Dns.InsertColumn(13, "¶îÍâ×ÊÔ´¼ÇÂ¼Êı", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(0, "åºå·", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(1, "æ ‡è¯†", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(2, "QR(æ ‡å¿—)", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(3, "opcode(æ ‡å¿—)", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(4, "AA(æ ‡å¿—)", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(5, "TC(æ ‡å¿—)", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(6, "RD(æ ‡å¿—)", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(7, "RA(æ ‡å¿—)", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(8, "zero(æ ‡å¿—)", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(9, "rcode(æ ‡å¿—)", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(10, "é—®é¢˜æ•°", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(11, "èµ„æºè®°å½•æ•°", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(12, "æˆæƒèµ„æºè®°å½•æ•°", LVCFMT_LEFT, 300, 1);
+	m_list_Dns.InsertColumn(13, "é¢å¤–èµ„æºè®°å½•æ•°", LVCFMT_LEFT, 300, 1);
 	m_list_Dns.SetColumnWidth(0, 40);
 	m_list_Dns.SetColumnWidth(1, 80);
 	m_list_Dns.SetColumnWidth(2, 60);
@@ -475,7 +529,7 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 		LVS_EX_GRIDLINES |
 		LVS_EX_FLATSB |
 		LVS_EX_HEADERDRAGDROP);
-	//ÉèÖÃÁĞ±í¿ò±³¾°ÑÕÉ«,×ÖÌåÑÕÉ«
+	//è®¾ç½®åˆ—è¡¨æ¡†èƒŒæ™¯é¢œè‰²,å­—ä½“é¢œè‰²
 //	m_list_common.SetBkColor (RGB(135,202,235));
 	m_list_ethernet.SetBkColor (RGB(225,245,245));
 	m_list_arp.SetBkColor (RGB(192,243,204));
@@ -503,15 +557,15 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	CTabCtrl* pTab = (CTabCtrl*) GetDlgItem(IDC_TAB1);
 	CRect rectWnd;
 	pTab->GetWindowRect(rectWnd);
-	m_tab1.InsertItem(0, "ÍøÂçĞÅÏ¢  ", 0);	
-	m_tab1.InsertItem(1, "ÒÔÌ«ÍøĞ­ÒéĞÅÏ¢", 1);
-	m_tab1.InsertItem(2, "ARP/RARPĞ­ÒéĞÅÏ¢  ", 2);
-	m_tab1.InsertItem(3, "IPĞ­ÒéĞÅÏ¢  ", 3);
-	m_tab1.InsertItem(4, "ICMPĞ­ÒéĞÅÏ¢  ", 4);
-	m_tab1.InsertItem(5, "TCPĞ­ÒéĞÅÏ¢  ", 5);
-	m_tab1.InsertItem(6, "UDPĞ­ÒéĞÅÏ¢  ",6);	
-	m_tab1.InsertItem(7, "HTTPĞ­ÒéĞÅÏ¢  ",7);
-	m_tab1.InsertItem(8, "DNSĞ­ÒéĞÅÏ¢  ",8);
+	m_tab1.InsertItem(0, "ç½‘ç»œä¿¡æ¯  ", 0);	
+	m_tab1.InsertItem(1, "ä»¥å¤ªç½‘åè®®ä¿¡æ¯", 1);
+	m_tab1.InsertItem(2, "ARP/RARPåè®®ä¿¡æ¯  ", 2);
+	m_tab1.InsertItem(3, "IPåè®®ä¿¡æ¯  ", 3);
+	m_tab1.InsertItem(4, "ICMPåè®®ä¿¡æ¯  ", 4);
+	m_tab1.InsertItem(5, "TCPåè®®ä¿¡æ¯  ", 5);
+	m_tab1.InsertItem(6, "UDPåè®®ä¿¡æ¯  ",6);	
+	m_tab1.InsertItem(7, "HTTPåè®®ä¿¡æ¯  ",7);
+	m_tab1.InsertItem(8, "DNSåè®®ä¿¡æ¯  ",8);
 
 	CRect rect;
 	GetClientRect(&rect);
@@ -555,7 +609,7 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_list_Dns.SetWindowPos(NULL, rect1.left, rect1.top, rect1.Width(),
 		h , NULL); 
 	m_list_Dns.ShowWindow(SW_HIDE);
-	////////////////////////////////////TreeCtrl¿Ø¼ş///////////////
+	////////////////////////////////////TreeCtrlæ§ä»¶///////////////
 	m_ImageList.Create(16,16,ILC_COLOR16,12, 0);
 	m_ImageList.Add(AfxGetApp()->LoadIcon(IDI_ICON_FRAM));
 	m_ImageList.Add(AfxGetApp()->LoadIcon(IDI_ICON_H));
@@ -570,16 +624,16 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_ImageList.Add(AfxGetApp()->LoadIcon(IDI_ICON_TEXT));
 	m_tree.SetImageList(&m_ImageList,LVSIL_NORMAL );
 	m_tree.SetTextColor(RGB(60,100,60));
-  //±à¼­¿Ø¼ş
-		//³õÊ¼»¯×ÖÌå¼°ÑÕÉ«
+  //ç¼–è¾‘æ§ä»¶
+		//åˆå§‹åŒ–å­—ä½“åŠé¢œè‰²
 	ZeroMemory(&m_cf, sizeof(CHARFORMAT));
 	m_cf.cbSize = sizeof(CHARFORMAT);
 	m_cf.dwMask = CFM_BOLD | CFM_COLOR | CFM_FACE |
 		CFM_ITALIC | CFM_SIZE | CFM_UNDERLINE;
 	m_cf.dwEffects = 0;
-	m_cf.yHeight = 16*15;//ÎÄ×Ö¸ß¶È
-	m_cf.crTextColor = RGB(80, 10, 25); //ÎÄ×ÖÑÕÉ«
-	strcpy(m_cf.szFaceName ,_T("Á¥Êé"));//ÉèÖÃ×ÖÌå
+	m_cf.yHeight = 16*15;//æ–‡å­—é«˜åº¦
+	m_cf.crTextColor = RGB(80, 10, 25); //æ–‡å­—é¢œè‰²
+	strcpy(m_cf.szFaceName ,_T("éš¶ä¹¦"));//è®¾ç½®å­—ä½“
 	m_EditCtrl.SetDefaultCharFormat(m_cf);
 
 	m_tree.SetWindowPos(NULL, rect1.left,rect2.bottom+h+12, rect1.Width()/2,
@@ -590,11 +644,11 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_EditCtrl.ShowWindow(SW_SHOW);
 	// Get the popup menu 
 	CMenu* mmenu = GetMenu();
-	m_Psubmenu = mmenu->GetSubMenu(2);// »ñµÃ×Ó²Ëµ¥
-	// Ä¬ÈÏÉèÖÃsub(0) Ñ¡ÖĞ
+	m_Psubmenu = mmenu->GetSubMenu(2);// è·å¾—å­èœå•
+	// é»˜è®¤è®¾ç½®sub(0) é€‰ä¸­
 	m_Psubmenu->CheckMenuItem(MENU_IF_SAVE, MF_CHECKED | MF_BYCOMMAND);
 	g_hWnd = GetSafeHwnd();
-	SetWindowText("ÍøÂç°ü½Ø»ñ·ÖÎöÏµÍ³"); 
+	SetWindowText("ç½‘ç»œåŒ…æˆªè·åˆ†æç³»ç»Ÿ"); 
 	CButton *p=(CButton*)GetDlgItem (IDC_BUTTON_END);
 	p->EnableWindow (FALSE);
 	CMenu *pp=(CMenu *)GetMenu();
@@ -617,7 +671,7 @@ void CProtocolAnalysisDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	{
 		OnExit();
 	}
-	else if ((nID & 0xFFF0) == SC_MAXIMIZE)//×î´ó»¯
+	else if ((nID & 0xFFF0) == SC_MAXIMIZE)//æœ€å¤§åŒ–
 	{
 		ShowWindow(SW_MAXIMIZE);
 		CRect rect1, rect2;
@@ -658,7 +712,7 @@ void CProtocolAnalysisDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	}
 	else if ((nID & 0xFFF0) == SC_MINIMIZE)
 	{
-		TrayMyIcon(); // ×îĞ¡»¯Ê±ÈÎÎñÍĞÅÌ
+		TrayMyIcon(); // æœ€å°åŒ–æ—¶ä»»åŠ¡æ‰˜ç›˜
 	}
 	else
 	{
@@ -693,16 +747,39 @@ HCURSOR CProtocolAnalysisDlg::OnQueryDragIcon()
 }
 
 
-UINT ThreadPacketCapture(LPVOID pParam)//°ü²¶»ñÏß³Ì
+UINT ThreadPacketCapture(LPVOID pParam)//åŒ…æ•è·çº¿ç¨‹
 {
 	CapturePacket();
 	return 0;
 }
 
-UINT ThreadReadFile(LPVOID pParam)//¶ÁÈ¡ÎÄ¼şÏß³Ì
+UINT ThreadReadFile(LPVOID pParam)//è¯»å–æ–‡ä»¶çº¿ç¨‹
 {
 	DumpFileOperation();
 	return 0;
+}
+
+void CProtocolAnalysisDlg::OnRecvMsg(char * pbuf, int nsize)
+{
+	MsgInfo * pmi = (MsgInfo *)pbuf;
+
+	PacketInformation * pi = new PacketInformation;
+	memset(pi, 0, sizeof(PacketInformation));
+
+	RAW_PACKET* pRawPacket = new RAW_PACKET;
+	pRawPacket->pPacketInfo = NULL;
+	pRawPacket->ip_seq =0;//åŒ…åºå·ä¸ºåˆå§‹ä¸º 0
+	pRawPacket->tcpOrUdp_seq =0;
+
+	memset(&pRawPacket->PktHeader, 0, sizeof(pcap_pkthdr));
+
+	u_char* pPktData = new u_char[nsize];
+	memcpy(pPktData, pbuf, nsize);//æ³¨æ„æ­¤å¤„ä¸ºpacketdataï¼Œ åŒ…æ•°æ®
+	pRawPacket->pPktData = pPktData;
+
+	pRawPacket->pPacketInfo = pi;
+
+	OnPacket(0, (LPARAM)pRawPacket);
 }
 
 LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
@@ -718,7 +795,7 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	sprintf(str, "%d", m_nPacket);
 	int nIdx = m_list_common.GetItemCount();
 	m_list_common.InsertItem(nIdx, str);
-	/*Ìí¼Ó¸½¼Ó¾İ,¼´Êı½«ÁĞ±íÏîÓë´æ·ÅÔ­Ê¼Êı¾İ°üµÄ¶ÑµØÖ·Ö¸Õë¹ØÁª*/
+	/*æ·»åŠ é™„åŠ æ®,å³æ•°å°†åˆ—è¡¨é¡¹ä¸å­˜æ”¾åŸå§‹æ•°æ®åŒ…çš„å †åœ°å€æŒ‡é’ˆå…³è”*/
 	m_list_common.SetItemData(nIdx,(DWORD)lParam);
 	m_list_common.SetItemText(nIdx, 0, str);
 	m_list_common.SetItemText(nIdx, 1, pi->SourceMac);
@@ -733,25 +810,8 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	m_list_common.SetItemText(nIdx, 8, (LPCTSTR)sTime);
 	char sText[200] = {0};
 	int nsize = 100;
-	if(CMyAnalysiser::GetInstance()->DispBuffer(prp, sText, nsize))
-	{
-		if (IDYES == AfxGetMainWnd()->MessageBox("pack 5 finded, will be break?", str, MB_YESNO))
-		{
-			if (g_StopThread == TRUE)
-			{
-				return 0;
-			}
-			g_StopThread = TRUE;
-			CButton *p=(CButton*)GetDlgItem (IDC_BUTTON_END);
-			p->EnableWindow (FALSE);
-			CMenu *pp=(CMenu *)GetMenu();
-			pp->EnableMenuItem (MENU_STOP,TRUE);
-			CButton *p2=(CButton*)GetDlgItem (IDC_BUTTON_START);
-			p2->EnableWindow (TRUE);
-			CMenu *pp2=(CMenu *)GetMenu();
-			pp2->EnableMenuItem (MENU_START,FALSE);
-		}	
-	}
+	CMyAnalysiser::GetInstance()->DispBuffer(prp, sText, nsize);
+
 	sprintf(str, "0x%x", nsize);
 	m_list_common.SetItemText(nIdx, 9, str);
 	m_list_common.SetItemText(nIdx, 10, sText);
@@ -766,11 +826,11 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	PacketNumber.count = m_nPacket+1;
 	CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_PACKET_COUNT);
 	CString strnum;
-	strnum.Format("½Ø»ñµÄ°üÊıÄ¿:%d",PacketNumber.count);
+	strnum.Format("æˆªè·çš„åŒ…æ•°ç›®:%d",PacketNumber.count);
 	p->SetWindowText (strnum);
 	UpdateData(FALSE);
 	m_nPacket++;
-	if (m_nPacket==1600)//½Ø»ñµÄÊı¾İ°üµÄÉÏÏŞ
+	if (m_nPacket==1600)//æˆªè·çš„æ•°æ®åŒ…çš„ä¸Šé™
 	{
 		if (g_StopThread == TRUE)
 		{
@@ -800,7 +860,7 @@ LRESULT CProtocolAnalysisDlg::OnEthernet(WPARAM wParam, LPARAM lParam)
 	char str[10]; 
 	sprintf(str, "%d", m_Ethernet);
 	m_list_ethernet.InsertItem(m_Ethernet,str);
-	/*Ìí¼Ó¸½¼Ó¾İ,¼´½«ÁĞ±íÏîÓë´æ·ÅÔ­Ê¼Êı¾İ°üµÄ¶ÑµØÖ·Ö¸Õë¹ØÁª*/
+	/*æ·»åŠ é™„åŠ æ®,å³å°†åˆ—è¡¨é¡¹ä¸å­˜æ”¾åŸå§‹æ•°æ®åŒ…çš„å †åœ°å€æŒ‡é’ˆå…³è”*/
 	m_list_ethernet.SetItemData(m_Ethernet,(DWORD)lParam);
 	m_list_ethernet.SetItemText(m_Ethernet, 0, str);
 	m_list_ethernet.SetItemText(m_Ethernet, 1, g_DisplayEthernet.SourceMac);
@@ -816,9 +876,9 @@ LRESULT CProtocolAnalysisDlg::OnArp(WPARAM wParam, LPARAM lParam)
 { 
 	char str[10]; 
 	sprintf(str, "%d", m_nArp);
-	m_tree.InsertItem(_T("Ğ­ÒéÀàĞÍ:arp"), 5,5,m_MacHdrRoot,TVI_LAST);
+	m_tree.InsertItem(_T("åè®®ç±»å‹:arp"), 5,5,m_MacHdrRoot,TVI_LAST);
 	m_list_arp.InsertItem(m_nArp,str);
-	/*Ìí¼Ó¸½¼Ó¾İ,¼´½«ÁĞ±íÏîÓë´æ·ÅÔ­Ê¼Êı¾İ°üµÄ¶ÑµØÖ·Ö¸Õë¹ØÁª*/
+	/*æ·»åŠ é™„åŠ æ®,å³å°†åˆ—è¡¨é¡¹ä¸å­˜æ”¾åŸå§‹æ•°æ®åŒ…çš„å †åœ°å€æŒ‡é’ˆå…³è”*/
 	m_list_arp.SetItemData(m_nArp,(DWORD)lParam);
 	m_list_arp.SetItemText(m_nArp, 0, str);
 	m_list_arp.SetItemText(m_nArp, 1, g_DisplayARP.Hardware);
@@ -841,9 +901,9 @@ LRESULT CProtocolAnalysisDlg::OnIp(WPARAM wParam, LPARAM lParam)
 	pRawPacket->ip_seq = m_nIp;
 	char str[10]; 
 	sprintf(str, "%d", m_nIp);
-	m_tree.InsertItem(_T("Ğ­ÒéÀàĞÍ:Ip"), 5,5,m_MacHdrRoot,TVI_LAST);
+	m_tree.InsertItem(_T("åè®®ç±»å‹:Ip"), 5,5,m_MacHdrRoot,TVI_LAST);
 	m_list_ip.InsertItem(m_nIp,str);
-	/*Ìí¼Ó¸½¼Ó¾İ,¼´½«ÁĞ±íÏîÓë´æ·ÅÔ­Ê¼Êı¾İ°üµÄ¶ÑµØÖ·Ö¸Õë¹ØÁª*/
+	/*æ·»åŠ é™„åŠ æ®,å³å°†åˆ—è¡¨é¡¹ä¸å­˜æ”¾åŸå§‹æ•°æ®åŒ…çš„å †åœ°å€æŒ‡é’ˆå…³è”*/
 	m_list_ip.SetItemData(m_nIp,(DWORD)lParam);
 	m_list_ip.SetItemText(m_nIp, 0, str);
 	m_list_ip.SetItemText(m_nIp, 1, g_DisplayIP.Version);
@@ -868,7 +928,7 @@ LRESULT CProtocolAnalysisDlg::OnIcmp(WPARAM wParam, LPARAM lParam)
 	char str[10]; 
 	sprintf(str, "%d", m_nIcmp);
 	m_list_icmp.InsertItem(m_nIcmp,str);
-	/*Ìí¼Ó¸½¼Ó¾İ,¼´Êı½«ÁĞ±íÏîÓë´æ·ÅÔ­Ê¼Êı¾İ°üµÄ¶ÑµØÖ·Ö¸Õë¹ØÁª*/
+	/*æ·»åŠ é™„åŠ æ®,å³æ•°å°†åˆ—è¡¨é¡¹ä¸å­˜æ”¾åŸå§‹æ•°æ®åŒ…çš„å †åœ°å€æŒ‡é’ˆå…³è”*/
 	m_list_icmp.SetItemData(m_nIcmp,(DWORD)lParam);
 	m_list_icmp.SetItemText(m_nIcmp, 0, str);
 	m_list_icmp.SetItemText(m_nIcmp, 1, g_DisplayIcmp.type);
@@ -887,7 +947,7 @@ LRESULT CProtocolAnalysisDlg::OnTcp(WPARAM wParam, LPARAM lParam)
 	char str[10]; 
 	sprintf(str, "%d", m_nTcp);
 	m_list_tcp.InsertItem(m_nTcp,str);
-	/*Ìí¼Ó¸½¼Ó¾İ,¼´Êı½«ÁĞ±íÏîÓë´æ·ÅÔ­Ê¼Êı¾İ°üµÄ¶ÑµØÖ·Ö¸Õë¹ØÁª*/
+	/*æ·»åŠ é™„åŠ æ®,å³æ•°å°†åˆ—è¡¨é¡¹ä¸å­˜æ”¾åŸå§‹æ•°æ®åŒ…çš„å †åœ°å€æŒ‡é’ˆå…³è”*/
 	m_list_tcp.SetItemData(m_nTcp,(DWORD)lParam);
 	m_list_tcp.SetItemText(m_nTcp, 0, str);
 	m_list_tcp.SetItemText(m_nTcp, 1, g_DisplayTCP.SrcPort);
@@ -910,7 +970,7 @@ LRESULT CProtocolAnalysisDlg::OnHttp(WPARAM wParam, LPARAM lParam)
 	char str[10]; 
 	sprintf(str, "%d", m_nHttp);
 	m_list_http.InsertItem(m_nHttp,str);
-	/*Ìí¼Ó¸½¼Ó¾İ,¼´Êı½«ÁĞ±íÏîÓë´æ·ÅÔ­Ê¼Êı¾İ°üµÄ¶ÑµØÖ·Ö¸Õë¹ØÁª*/
+	/*æ·»åŠ é™„åŠ æ®,å³æ•°å°†åˆ—è¡¨é¡¹ä¸å­˜æ”¾åŸå§‹æ•°æ®åŒ…çš„å †åœ°å€æŒ‡é’ˆå…³è”*/
 	m_list_http.SetItemData(m_nHttp,(DWORD)lParam);
 	m_list_http.SetItemText(m_nHttp, 0, str);
 	/////////////////
@@ -920,33 +980,33 @@ LRESULT CProtocolAnalysisDlg::OnHttp(WPARAM wParam, LPARAM lParam)
 	{
 		struct IPV4 *pIPHdr = (struct IPV4 *)((BYTE*)pMacHdr+sizeof(MAC_HEADER));
 		in_addr ipAddr;
-		//ipÔ´µØÖ·
+		//ipæºåœ°å€
 		ipAddr.s_addr = pIPHdr->SourceAddr;
 		m_list_http.SetItemText(m_nHttp, 1, inet_ntoa(ipAddr));
-		//IPÄ¿µÄµØÖ·
+		//IPç›®çš„åœ°å€
 		ipAddr.s_addr = pIPHdr->DestinationAddr;
 		m_list_http.SetItemText(m_nHttp, 2, inet_ntoa(ipAddr));
-		int len = ntohs(pIPHdr->Length);//°üº¬ipÍ·ºÍÊı¾İ²¿·Ö
+		int len = ntohs(pIPHdr->Length);//åŒ…å«ipå¤´å’Œæ•°æ®éƒ¨åˆ†
 		int off_IP_hdr =(int)wParam;
-		BYTE *pHttp=(BYTE *)pIPHdr+off_IP_hdr;//¶¨Î»µ½http¿ªÍ·´¦
-		if (len <= 40)//ip°ü³¤¶ÈĞ£Ñé
+		BYTE *pHttp=(BYTE *)pIPHdr+off_IP_hdr;//å®šä½åˆ°httpå¼€å¤´å¤„
+		if (len <= 40)//ipåŒ…é•¿åº¦æ ¡éªŒ
 		{
 			return -1;
 		}
 		else
 		{
-	     	//½âÎöHTTP±¨ÎÄ---------------------------------------------------------
+	     	//è§£æHTTPæŠ¥æ–‡---------------------------------------------------------
 			int n = 0;
 			char buffer[BUFFER_MAX_LENGTH];
 			int bufsize = 0;
-			for( ;n+off_IP_hdr < len; n++)//httpÏà¶ÔÓÚipµÄÆ«ÒÆÁ¿ÊÇ·ñĞ¡ÓÚip³¤
+			for( ;n+off_IP_hdr < len; n++)//httpç›¸å¯¹äºipçš„åç§»é‡æ˜¯å¦å°äºipé•¿
 			{
-				buffer[bufsize] = *(pHttp+n); /* ¸´ÖÆhtttÄÚÈİµ½buffer */
+				buffer[bufsize] = *(pHttp+n); /* å¤åˆ¶htttå†…å®¹åˆ°buffer */
 				bufsize ++;
 			}
 			buffer[bufsize] = '\0';
 			m_list_http.SetItemText(m_nHttp, 3, buffer);
-		    //½âÎöHTTP±¨ÎÄ½áÊø-----------------------------------------------------
+		    //è§£æHTTPæŠ¥æ–‡ç»“æŸ-----------------------------------------------------
 		}//else
 	}//if
 	UpdateData(FALSE);
@@ -961,7 +1021,7 @@ LRESULT CProtocolAnalysisDlg::OnUdp(WPARAM wParam, LPARAM lParam)
 	char str[10]; 
 	sprintf(str, "%d", m_nUdp);
 	m_list_udp.InsertItem(m_nUdp,str);
-	/*Ìí¼Ó¸½¼Ó¾İ,¼´Êı½«ÁĞ±íÏîÓë´æ·ÅÔ­Ê¼Êı¾İ°üµÄ¶ÑµØÖ·Ö¸Õë¹ØÁª*/
+	/*æ·»åŠ é™„åŠ æ®,å³æ•°å°†åˆ—è¡¨é¡¹ä¸å­˜æ”¾åŸå§‹æ•°æ®åŒ…çš„å †åœ°å€æŒ‡é’ˆå…³è”*/
 	m_list_udp.SetItemData(m_nUdp,(DWORD)lParam);
 	m_list_udp.SetItemText(m_nUdp, 0, str);
 	m_list_udp.SetItemText(m_nUdp, 1, g_DisplayUDP.SrcPort);
@@ -982,72 +1042,72 @@ LRESULT CProtocolAnalysisDlg::OnDns(WPARAM wParam, LPARAM lParam)
 	struct DNS *pDns =(struct DNS *)((BYTE*)pIPHdr+pIPHdr->HeaderLength*4+
 		sizeof(struct UDP));
 	m_list_Dns.InsertItem(m_nDns,str);
-	/*Ìí¼Ó¸½¼Ó¾İ,¼´Êı½«ÁĞ±íÏîÓë´æ·ÅÔ­Ê¼Êı¾İ°üµÄ¶ÑµØÖ·Ö¸Õë¹ØÁª*/
+	/*æ·»åŠ é™„åŠ æ®,å³æ•°å°†åˆ—è¡¨é¡¹ä¸å­˜æ”¾åŸå§‹æ•°æ®åŒ…çš„å †åœ°å€æŒ‡é’ˆå…³è”*/
 	m_list_Dns.SetItemData(m_nDns,(DWORD)lParam);
 	m_list_Dns.SetItemText(m_nDns, 0, str);
 	sprintf(str, "%d",ntohs(pDns->d_id));
 	m_list_Dns.SetItemText(m_nDns, 1,str);
 	/*
-	±êÖ¾(2¸ö×Ö½Ú)£ºQR opcode AA TC RD RA zero rcode .
-	QR(1±ÈÌØ£©opcode£¨4±ÈÌØ£© AA£¨1±ÈÌØ£© TC£¨1±ÈÌØ£© 
-	RD(1±ÈÌØ)RA£¨1±ÈÌØ£© zero£¨3±ÈÌØ£© rcode£¨4±ÈÌØ£©
+	æ ‡å¿—(2ä¸ªå­—èŠ‚)ï¼šQR opcode AA TC RD RA zero rcode .
+	QR(1æ¯”ç‰¹ï¼‰opcodeï¼ˆ4æ¯”ç‰¹ï¼‰ AAï¼ˆ1æ¯”ç‰¹ï¼‰ TCï¼ˆ1æ¯”ç‰¹ï¼‰ 
+	RD(1æ¯”ç‰¹)RAï¼ˆ1æ¯”ç‰¹ï¼‰ zeroï¼ˆ3æ¯”ç‰¹ï¼‰ rcodeï¼ˆ4æ¯”ç‰¹ï¼‰
 	*/
 	unsigned short flag= ntohs(pDns->d_option);
     int ival=flag&0x8000;
-	sprintf(str,"%s ",ival ? _T("ÏìÓ¦"):_T("²éÑ¯"));
+	sprintf(str,"%s ",ival ? _T("å“åº”"):_T("æŸ¥è¯¢"));
 	m_list_Dns.SetItemText(m_nDns, 2,str);
 	ival=flag&0x7800;
 	switch (ival)
 	{
 	case 0:
-			sprintf(str,"%s ",_T("±ê×¼"));
+			sprintf(str,"%s ",_T("æ ‡å‡†"));
 		break;
 		case 1:
-			sprintf(str,"%s ",_T("·´Ïò"));
+			sprintf(str,"%s ",_T("åå‘"));
 		break;
 		case 2:
-			sprintf(str,"%s ",_T("·şÎñÆ÷×´Ì¬ÇëÇó"));
+			sprintf(str,"%s ",_T("æœåŠ¡å™¨çŠ¶æ€è¯·æ±‚"));
 		break;
 		default:
 			sprintf(str,"%s ",_T("--"));
 	}
 	m_list_Dns.SetItemText(m_nDns, 3,str);
 	ival=flag&0x0400;
-	sprintf(str,"%s ",ival ? _T("È¨ÏŞ·şÎñÆ÷"):_T("--"));
+	sprintf(str,"%s ",ival ? _T("æƒé™æœåŠ¡å™¨"):_T("--"));
 	m_list_Dns.SetItemText(m_nDns, 4,str);
 	ival=flag&0x0200;
-	sprintf(str,"%s ",ival ? _T("½Ø¶Ï(>512)"):_T("--"));
+	sprintf(str,"%s ",ival ? _T("æˆªæ–­(>512)"):_T("--"));
 	m_list_Dns.SetItemText(m_nDns, 5,str);
 	ival=flag&0x0100;
-	sprintf(str,"%s ",ival ? _T("ÆÚÍûµİ¹é"):_T("--"));
+	sprintf(str,"%s ",ival ? _T("æœŸæœ›é€’å½’"):_T("--"));
 	m_list_Dns.SetItemText(m_nDns, 6,str);
 	ival=flag&0x0080;
-	sprintf(str,"%s ",ival ? _T("Ö§³Öµİ¹é"):_T("--"));
+	sprintf(str,"%s ",ival ? _T("æ”¯æŒé€’å½’"):_T("--"));
 	m_list_Dns.SetItemText(m_nDns, 7,str);
 	m_list_Dns.SetItemText(m_nDns, 8,_T("0"));
 	ival=flag&0x000F;
 	switch (ival)
 	{
 		case 0:
-			sprintf(str,"%s ",_T("Ã»ÓĞ´íÎó"));
+			sprintf(str,"%s ",_T("æ²¡æœ‰é”™è¯¯"));
 		break;
 		case 1:
-			sprintf(str,"%s ",_T("±¨ÎÄ¸ñÊ½´íÎó"));
+			sprintf(str,"%s ",_T("æŠ¥æ–‡æ ¼å¼é”™è¯¯"));
 		break;
 		case 2:
-			sprintf(str,"%s ",_T("·şÎñÆ÷Ê§°Ü"));
+			sprintf(str,"%s ",_T("æœåŠ¡å™¨å¤±è´¥"));
 		break;
 		case 3:
-			sprintf(str,"%s ",_T("Ãû×Ö´íÎó"));
+			sprintf(str,"%s ",_T("åå­—é”™è¯¯"));
 		break;
 		case 4:
-			sprintf(str,"%s ",_T("²éÑ¯ÀàĞÍ²»Ö§³Ö"));
+			sprintf(str,"%s ",_T("æŸ¥è¯¢ç±»å‹ä¸æ”¯æŒ"));
 		break;
 		case 5:
-			sprintf(str,"%s ",_T("¾Ü¾ø"));
+			sprintf(str,"%s ",_T("æ‹’ç»"));
 		break;	
 		default:
-			sprintf(str,"%s ",_T("--"));//6-15±£Áô
+			sprintf(str,"%s ",_T("--"));//6-15ä¿ç•™
 	}
 	m_list_Dns.SetItemText(m_nDns, 9,str);
 	sprintf(str, "%d",ntohs(pDns->d_qdcount));
@@ -1103,7 +1163,7 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_list_http.ShowWindow(SW_HIDE);
 		m_list_Dns.ShowWindow(SW_HIDE);
 		CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_STATUS);
-		p->SetWindowText ("Êı¾İ°üĞÅÏ¢");
+		p->SetWindowText ("æ•°æ®åŒ…ä¿¡æ¯");
 		m_pCurrentList= &m_list_common;
 	}
 	else if(m_tab1.GetCurSel () == 1 )
@@ -1118,7 +1178,7 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_list_http.ShowWindow(SW_HIDE);
 		m_list_Dns.ShowWindow(SW_HIDE);
 		CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_STATUS);
-		p->SetWindowText ("ÒÔÌ«ÍøĞ­Òé·ÖÎö");
+		p->SetWindowText ("ä»¥å¤ªç½‘åè®®åˆ†æ");
 		m_pCurrentList = &m_list_ethernet;
 	}
 	else if (m_tab1.GetCurSel() == 2)
@@ -1133,7 +1193,7 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_list_http.ShowWindow(SW_HIDE);
 		m_list_Dns.ShowWindow(SW_HIDE);
 		CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_STATUS);
-		p->SetWindowText ("ARPĞ­Òé·ÖÎö");
+		p->SetWindowText ("ARPåè®®åˆ†æ");
 		m_pCurrentList=&m_list_arp;
 	}
 	else if (m_tab1.GetCurSel() == 3)
@@ -1148,7 +1208,7 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_list_http.ShowWindow(SW_HIDE);
 		m_list_Dns.ShowWindow(SW_HIDE);
 		CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_STATUS);
-		p->SetWindowText ("IPĞ­Òé·ÖÎö");
+		p->SetWindowText ("IPåè®®åˆ†æ");
 		m_pCurrentList = &m_list_ip;
 	}
 	else if (m_tab1.GetCurSel() == 4)
@@ -1163,7 +1223,7 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_list_http.ShowWindow(SW_HIDE);
 		m_list_Dns.ShowWindow(SW_HIDE);
 		CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_STATUS);
-		p->SetWindowText ("ICMPĞ­Òé·ÖÎö");
+		p->SetWindowText ("ICMPåè®®åˆ†æ");
 		m_pCurrentList = & m_list_icmp;
 	}
 	else if (m_tab1.GetCurSel() == 5)
@@ -1178,7 +1238,7 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_list_http.ShowWindow(SW_HIDE);
 		m_list_Dns.ShowWindow(SW_HIDE);
 		CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_STATUS);
-		p->SetWindowText ("TCPĞ­Òé·ÖÎö");
+		p->SetWindowText ("TCPåè®®åˆ†æ");
 		m_pCurrentList =&m_list_tcp;
 	}
 	else if (m_tab1.GetCurSel() == 6)
@@ -1193,7 +1253,7 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_list_http.ShowWindow(SW_HIDE);
 		m_list_Dns.ShowWindow(SW_HIDE);
 		CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_STATUS);
-		p->SetWindowText ("UDPĞ­Òé·ÖÎö");
+		p->SetWindowText ("UDPåè®®åˆ†æ");
 		m_pCurrentList = &m_list_udp;
 	}
 	else if (m_tab1.GetCurSel() == 7)
@@ -1208,7 +1268,7 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_list_ethernet.ShowWindow(SW_HIDE);
 		m_list_Dns.ShowWindow(SW_HIDE);
 		CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_STATUS);
-		p->SetWindowText ("HTTPĞ­Òé·ÖÎö");
+		p->SetWindowText ("HTTPåè®®åˆ†æ");
 		m_pCurrentList = & m_list_http;
 	}
 	else
@@ -1223,13 +1283,13 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_list_ethernet.ShowWindow(SW_HIDE);
 		m_list_http.ShowWindow(SW_HIDE);
 		CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_STATUS);
-		p->SetWindowText ("DNSĞ­Òé·ÖÎö");
+		p->SetWindowText ("DNSåè®®åˆ†æ");
 		m_pCurrentList = &m_list_Dns;
 	}
 	CRect rect1, rect2;
-		m_tab1.GetWindowRect(rect1);// ÆÁÄ»×ø±ê  
-		m_tab1.GetItemRect(0, rect2);// È¡µÃTabÉÏ·½°´Å¥µÄ´óĞ¡ 
-		ScreenToClient(rect1);//×ª»»ÎªÆÁÄ»×ø±ê
+		m_tab1.GetWindowRect(rect1);// å±å¹•åæ ‡  
+		m_tab1.GetItemRect(0, rect2);// å–å¾—Tabä¸Šæ–¹æŒ‰é’®çš„å¤§å° 
+		ScreenToClient(rect1);//è½¬æ¢ä¸ºå±å¹•åæ ‡
 		rect1.left += 2;
 		rect1.top += rect2.Height() + 3;
 		int h=(rect1.Height() - rect2.Height())/2-2;
@@ -1259,7 +1319,7 @@ void CProtocolAnalysisDlg::OnSelchangeTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_EditCtrl.ShowWindow(SW_SHOW);
 	*pResult = 0;
 }
-/*¿ªÊ¼²Ëµ¥*/
+/*å¼€å§‹èœå•*/
 void CProtocolAnalysisDlg::OnStart()
 {
 	g_StopThread = FALSE;
@@ -1286,9 +1346,10 @@ void CProtocolAnalysisDlg::OnStop()
 
 void CProtocolAnalysisDlg::OnExit()
 {
-	int result =MessageBox(" \n\nÄãÕæµÄÒªÍË³öÂğ£¿","ÍøÂçĞ­Òé·ÖÎöÏµÍ³",MB_OKCANCEL);
+	int result =MessageBox(" \n\nä½ çœŸçš„è¦é€€å‡ºå—ï¼Ÿ","ç½‘ç»œåè®®åˆ†æç³»ç»Ÿ",MB_OKCANCEL);
 	if(result==IDOK)
 	{
+		g_bquit= true;
 		ReleaseAll();
 		PostQuitMessage(1);
 	}
@@ -1410,7 +1471,7 @@ void CProtocolAnalysisDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialog::OnSize(nType, cx, cy);
 	CRect rect;
-	GetClientRect(&rect);//È¡µÃ¿Í»§ÇøµÄ´óĞ¡ 
+	GetClientRect(&rect);//å–å¾—å®¢æˆ·åŒºçš„å¤§å° 
 	static int i=0;
 	if(i==1)
 	{
@@ -1418,9 +1479,9 @@ void CProtocolAnalysisDlg::OnSize(UINT nType, int cx, int cy)
 		newrect.top =rect.top +30;
 		m_tab1.MoveWindow (newrect);
 		CRect rect1, rect2;
-		m_tab1.GetWindowRect(rect1);// ÆÁÄ»×ø±ê  
-		m_tab1.GetItemRect(0, rect2);// È¡µÃTabÉÏ·½°´Å¥µÄ´óĞ¡ 
-		ScreenToClient(rect1);//×ª»»ÎªÆÁÄ»×ø±ê
+		m_tab1.GetWindowRect(rect1);// å±å¹•åæ ‡  
+		m_tab1.GetItemRect(0, rect2);// å–å¾—Tabä¸Šæ–¹æŒ‰é’®çš„å¤§å° 
+		ScreenToClient(rect1);//è½¬æ¢ä¸ºå±å¹•åæ ‡
 		rect1.left += 2;
 		rect1.top += rect2.Height() + 3;
 		int h=(rect1.Height() - rect2.Height())/2-6;
@@ -1456,16 +1517,16 @@ void CProtocolAnalysisDlg::OnSize(UINT nType, int cx, int cy)
 	i++;
 	if(i==2)
 		i=1;
-	InvalidateRect(rect);//ÖØ»æ
+	InvalidateRect(rect);//é‡ç»˜
 	GetWindowRect(&rect);
 	InvalidateRect(rect);	
 }
 void CProtocolAnalysisDlg::OnClickTab1(NMHDR* pNMHDR, LRESULT* pResult)
 {
 		CRect rect1, rect2;
-		m_tab1.GetWindowRect(rect1);// ÆÁÄ»×ø±ê  
-		m_tab1.GetItemRect(0, rect2);// È¡µÃTabÉÏ·½°´Å¥µÄ´óĞ¡ 
-		ScreenToClient(rect1);//×ª»»ÎªÆÁÄ»×ø±ê
+		m_tab1.GetWindowRect(rect1);// å±å¹•åæ ‡  
+		m_tab1.GetItemRect(0, rect2);// å–å¾—Tabä¸Šæ–¹æŒ‰é’®çš„å¤§å° 
+		ScreenToClient(rect1);//è½¬æ¢ä¸ºå±å¹•åæ ‡
 		rect1.left += 2;
 		rect1.top += rect2.Height() + 3;
 		int h=(rect1.Height() - rect2.Height())/2-2;
@@ -1493,7 +1554,7 @@ void CProtocolAnalysisDlg::OnClickTab1(NMHDR* pNMHDR, LRESULT* pResult)
 		m_EditCtrl.SetWindowPos(NULL, rect1.left+rect1.Width()/2 +3,rect2.bottom+h+28 , rect1.Width()/2,
 			h+6, NULL); 
 		m_EditCtrl.ShowWindow(SW_SHOW);
-		//ÇĞ»»tabÊ±Çå³ıÊ÷ºÍÁĞ±íĞÅÏ¢
+		//åˆ‡æ¢tabæ—¶æ¸…é™¤æ ‘å’Œåˆ—è¡¨ä¿¡æ¯
 		m_tree.DeleteAllItems();
 		m_EditCtrl.SetWindowText(_T(""));
 	*pResult = 0;
@@ -1530,27 +1591,27 @@ void CProtocolAnalysisDlg::OnButtonSetFilter()
 void CProtocolAnalysisDlg::OnSave() 
 {
 	// TODO: Add your command handler code here
-	//¹¹Ôì±£´æ¶Ô»°¿òÀà
+	//æ„é€ ä¿å­˜å¯¹è¯æ¡†ç±»
 	LPCTSTR szTypes =_T("tcpdump Files (*.pcap)|*.pcap|")
 		_T("libpcap Files (*.cap)|*.cap|")
 		_T("All Files (*.*)|*.*||");
 	CFileDialog *pDlg = new CFileDialog( FALSE, _T(".pcap"), NULL, OFN_HIDEREADONLY |
 		OFN_OVERWRITEPROMPT |OFN_ALLOWMULTISELECT|OFN_ENABLESIZING, szTypes );
-	//µ¼³öµ½µÄÎÄ¼şÃû¼°Â·¾¶
+	//å¯¼å‡ºåˆ°çš„æ–‡ä»¶ååŠè·¯å¾„
 	if(IDOK!=pDlg->DoModal())
 	{
 		return ;
 	}
-	m_strfileNamePath=pDlg->GetPathName();//µÃµ½ÎÄ¼şÃû¼°Â·¾¶
+	m_strfileNamePath=pDlg->GetPathName();//å¾—åˆ°æ–‡ä»¶ååŠè·¯å¾„
 	delete pDlg;
-	if(m_SaveDumpFile)//ÊÇ·ñ±£´æÎÄ¼ş
+	if(m_SaveDumpFile)//æ˜¯å¦ä¿å­˜æ–‡ä»¶
 	{
-		//¿½±´µ½Òªµ¼³öµÄÄ¿Â¼ÖĞ,×¢ÒâMoveFile²»¿É,ÎÄ¼şÊôĞÔÎÊÌâ
+		//æ‹·è´åˆ°è¦å¯¼å‡ºçš„ç›®å½•ä¸­,æ³¨æ„MoveFileä¸å¯,æ–‡ä»¶å±æ€§é—®é¢˜
 		::CopyFile((LPCTSTR)(m_strFilePath+_T("\\temp.pcap")),(LPCTSTR)m_strfileNamePath,0);
 	}
 	else
 	{
-		MessageBox(_T("ÄãÃ»ÔÚÏµÍ³ÉèÖÃÀïÑ¡Ôñ±£´æÎÄ¼ş£¡"),_T("ÇëÑ¡Ôñ±£´æÎÄ¼ş."),MB_DEFBUTTON1);
+		MessageBox(_T("ä½ æ²¡åœ¨ç³»ç»Ÿè®¾ç½®é‡Œé€‰æ‹©ä¿å­˜æ–‡ä»¶ï¼"),_T("è¯·é€‰æ‹©ä¿å­˜æ–‡ä»¶."),MB_DEFBUTTON1);
 	}
 }
 
@@ -1572,7 +1633,7 @@ void CProtocolAnalysisDlg::OnCancelMode()
 	
 }
 
-//ÔÚÏÔÊ¾²¶»ñĞÅÏ¢
+//åœ¨æ˜¾ç¤ºæ•è·ä¿¡æ¯
 void CProtocolAnalysisDlg::ShowPacketInfo(RAW_PACKET* pRawPacket)
 {
 	CString strPktData=_T("") ;
@@ -1585,15 +1646,15 @@ void CProtocolAnalysisDlg::ShowPacketInfo(RAW_PACKET* pRawPacket)
 		UINT i=0;
 		for (; i<pRawPacket->PktHeader.caplen; i++)
 		{
-			//²åÈëĞĞºÅ
+			//æ’å…¥è¡Œå·
 			if (i%16 == 0)
 			{
-				strTmp.Format("%04X ", i);//Ê®Áù½øÖÆÊä³ö,×Ö¶Î¿í¶È4,¿Õ¸ñ
+				strTmp.Format("%04X ", i);//åå…­è¿›åˆ¶è¾“å‡º,å­—æ®µå®½åº¦4,ç©ºæ ¼
 				strPktData += strTmp;
 				strLineHex.Empty();
 				strLineAscii.Empty();
 			}
-			//²åÈëÊı¾İ
+			//æ’å…¥æ•°æ®
 			cTmp = *(pRawPacket->pPktData+i);
 			strTmp.Format("%02X ", cTmp);
 			strLineHex += strTmp;
@@ -1602,7 +1663,7 @@ void CProtocolAnalysisDlg::ShowPacketInfo(RAW_PACKET* pRawPacket)
 			else
 				strLineAscii += '.';
 
-			//²åÈë»Ø³µ»»ĞĞ
+			//æ’å…¥å›è½¦æ¢è¡Œ
 			if (i%16 == 15)
 			{
 				strPktData += strLineHex;
@@ -1610,7 +1671,7 @@ void CProtocolAnalysisDlg::ShowPacketInfo(RAW_PACKET* pRawPacket)
 				strPktData += "\r\n";
 			}
 		}
-		//Èç¹û×îºóÒ»ĞĞ²»¹»16¸ö×Ö·ûÔòµ¥¶À´¦Àí
+		//å¦‚æœæœ€åä¸€è¡Œä¸å¤Ÿ16ä¸ªå­—ç¬¦åˆ™å•ç‹¬å¤„ç†
 		if (--i%16 != 15)
 		{
 			for (UINT j=0; j<15-i%16; j++)
@@ -1622,29 +1683,29 @@ void CProtocolAnalysisDlg::ShowPacketInfo(RAW_PACKET* pRawPacket)
 			strPktData += strLineAscii;
 		}
 	}
-	//ÔÚ±à¼­ÊÓÍ¼ÖĞÏÔÊ¾
+	//åœ¨ç¼–è¾‘è§†å›¾ä¸­æ˜¾ç¤º
 	m_EditCtrl.SetWindowText(strPktData);
-	//Ê÷¿Ø¼ş Ö»ÏÔÊ¾MAC
-	//ÏÈÇå³ıÈ«²¿Ê÷
+	//æ ‘æ§ä»¶ åªæ˜¾ç¤ºMAC
+	//å…ˆæ¸…é™¤å…¨éƒ¨æ ‘
 	m_tree.DeleteAllItems();
 	UpdateWindow();
 	if (pRawPacket == NULL)
 		return ;
 	CString strItem;
-	//¼ÓÈë¸ù½Úµã
+	//åŠ å…¥æ ¹èŠ‚ç‚¹
 	strItem.Format("Frame (%d bytes)", pRawPacket->PktHeader.len);
 	m_TreeRoot=m_tree.InsertItem(strItem,0,0,TVI_ROOT,TVI_LAST);
-	//¼ÓÈëÒ»¼¶×Ó½ÚµãMacÍ·²¿
+	//åŠ å…¥ä¸€çº§å­èŠ‚ç‚¹Macå¤´éƒ¨
 	MAC_HEADER* pMacHdr = (MAC_HEADER*)pRawPacket->pPktData;
-	//¼ì²éÒÔÌ«Ö¡ÀàĞÍ,±ğÍüÁË×Ö½ÚĞò×ª»¯
-	if (ntohs(pMacHdr->LengthOrType)> 1500)//ÀàĞÍ×Ö¶Î(Ethernet II)
+	//æ£€æŸ¥ä»¥å¤ªå¸§ç±»å‹,åˆ«å¿˜äº†å­—èŠ‚åºè½¬åŒ–
+	if (ntohs(pMacHdr->LengthOrType)> 1500)//ç±»å‹å­—æ®µ(Ethernet II)
 		strItem.Format("MAC header (Ethernet II)");
 	else							
 		strItem.Format("MAC header (IEEE 802.3)");
 	m_MacHdrRoot = m_tree.InsertItem(strItem, 1,1,m_TreeRoot,TVI_LAST);
-	//½âÎöMacÖ¡--------------------------------------------------------
-	//MacÍ·²¿×Ó½Úµã£ºMacÄ¿µÄµØÖ·
-	strItem.Format("Ä¿µÄMac: %02X:%02X:%02X:%02X:%02X:%02X",
+	//è§£æMacå¸§--------------------------------------------------------
+	//Macå¤´éƒ¨å­èŠ‚ç‚¹ï¼šMacç›®çš„åœ°å€
+	strItem.Format("ç›®çš„Mac: %02X:%02X:%02X:%02X:%02X:%02X",
 					pMacHdr->DesMacAddr[0],
 					pMacHdr->DesMacAddr[1],
 					pMacHdr->DesMacAddr[2],
@@ -1653,8 +1714,8 @@ void CProtocolAnalysisDlg::ShowPacketInfo(RAW_PACKET* pRawPacket)
 					pMacHdr->DesMacAddr[5]);
 	m_tree.InsertItem(strItem, 3,3,m_MacHdrRoot,TVI_LAST);
 
-	//MacÍ·²¿×Ó½Úµã£ºMacÔ´µØÖ·
-	strItem.Format("Ô´Mac: %02X:%02X:%02X:%02X:%02X:%02X", 
+	//Macå¤´éƒ¨å­èŠ‚ç‚¹ï¼šMacæºåœ°å€
+	strItem.Format("æºMac: %02X:%02X:%02X:%02X:%02X:%02X", 
 					pMacHdr->SrcMacAddr[0],
 					pMacHdr->SrcMacAddr[1],
 					pMacHdr->SrcMacAddr[2],
@@ -1666,33 +1727,33 @@ void CProtocolAnalysisDlg::ShowPacketInfo(RAW_PACKET* pRawPacket)
 }
 void CProtocolAnalysisDlg::ShowIpInfo(int nItem)
 {
-	m_tree.InsertItem(_T("Ğ­ÒéÀàĞÍ£ºIP"), 5,5,m_MacHdrRoot,TVI_LAST);
-	//´¦ÀíÏÂipv4 Í·²¿
+	m_tree.InsertItem(_T("åè®®ç±»å‹ï¼šIP"), 5,5,m_MacHdrRoot,TVI_LAST);
+	//å¤„ç†ä¸‹ipv4 å¤´éƒ¨
 	CString strItem;
 	m_IpHdrRoot=m_tree.InsertItem(_T("IPV4"), 1,1,m_TreeRoot,TVI_LAST);
-	strItem.Format("Ğ­Òé°æ±¾: %s",m_list_ip.GetItemText(nItem,1));//È¡µÃ°æ±¾ºÅ
+	strItem.Format("åè®®ç‰ˆæœ¬: %s",m_list_ip.GetItemText(nItem,1));//å–å¾—ç‰ˆæœ¬å·
 	m_tree.InsertItem(strItem, 4,4,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("Ê×²¿³¤¶È: %s",m_list_ip.GetItemText(nItem,2));//È¡µÃÊ×²¿³¤¶È
+	strItem.Format("é¦–éƒ¨é•¿åº¦: %s",m_list_ip.GetItemText(nItem,2));//å–å¾—é¦–éƒ¨é•¿åº¦
 	m_tree.InsertItem(strItem, 6,6,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("·şÎñÖÊÁ¿: %s",m_list_ip.GetItemText(nItem,3));//È¡µÃ·şÎñÖÊÁ¿
+	strItem.Format("æœåŠ¡è´¨é‡: %s",m_list_ip.GetItemText(nItem,3));//å–å¾—æœåŠ¡è´¨é‡
 	m_tree.InsertItem(strItem, 7,7,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("Ip³¤¶È: %s",m_list_ip.GetItemText(nItem,4));//È¡µÃip×Ü³¤¶È
+	strItem.Format("Ipé•¿åº¦: %s",m_list_ip.GetItemText(nItem,4));//å–å¾—ipæ€»é•¿åº¦
 	m_tree.InsertItem(strItem, 6,6,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("±êÊ¶: %s",m_list_ip.GetItemText(nItem,5));//È¡µÃ±êÊ¶
+	strItem.Format("æ ‡è¯†: %s",m_list_ip.GetItemText(nItem,5));//å–å¾—æ ‡è¯†
 	m_tree.InsertItem(strItem, 9,9,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("±êÖ¾: %s",m_list_ip.GetItemText(nItem,6));//È¡µÃ±êÖ¾
+	strItem.Format("æ ‡å¿—: %s",m_list_ip.GetItemText(nItem,6));//å–å¾—æ ‡å¿—
 	m_tree.InsertItem(strItem, 9,9,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("Æ«ÒÆÁ¿: %s",m_list_ip.GetItemText(nItem,7));//È¡µÃÆ«ÒÆÁ¿
+	strItem.Format("åç§»é‡: %s",m_list_ip.GetItemText(nItem,7));//å–å¾—åç§»é‡
 	m_tree.InsertItem(strItem, 9,9,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("Éú´æÖÜÆÚ: %s",m_list_ip.GetItemText(nItem,8));//È¡µÃÉú´æÖÜÆÚ
+	strItem.Format("ç”Ÿå­˜å‘¨æœŸ: %s",m_list_ip.GetItemText(nItem,8));//å–å¾—ç”Ÿå­˜å‘¨æœŸ
 	m_tree.InsertItem(strItem, 8,8,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("Ğ­ÒéÀàĞÍ: %s",m_list_ip.GetItemText(nItem,9));//È¡µÃ·şĞ­ÒéÀàĞÍ
+	strItem.Format("åè®®ç±»å‹: %s",m_list_ip.GetItemText(nItem,9));//å–å¾—æœåè®®ç±»å‹
 	m_tree.InsertItem(strItem, 5,5,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("Ğ£ÑéºÍ: %s",m_list_ip.GetItemText(nItem,10));//Ğ£ÑéºÍ
+	strItem.Format("æ ¡éªŒå’Œ: %s",m_list_ip.GetItemText(nItem,10));//æ ¡éªŒå’Œ
 	m_tree.InsertItem(strItem, 2,2,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("Ô´Ip: %s",m_list_ip.GetItemText(nItem,11));//È¡µÃÔ´ip
+	strItem.Format("æºIp: %s",m_list_ip.GetItemText(nItem,11));//å–å¾—æºip
 	m_tree.InsertItem(strItem,3,3,m_IpHdrRoot,TVI_LAST);
-	strItem.Format("Ä¿µÄIp: %s",m_list_ip.GetItemText(nItem,12));//È¡µÃÄ¿µÄIp
+	strItem.Format("ç›®çš„Ip: %s",m_list_ip.GetItemText(nItem,12));//å–å¾—ç›®çš„Ip
 	m_tree.InsertItem(strItem, 3,3,m_IpHdrRoot,TVI_LAST);
 }
 
@@ -1700,13 +1761,13 @@ void CProtocolAnalysisDlg::ShowUdpInfo(int nItem)
 {
 	CString strItem;
 	m_UdpHdrRoot=m_tree.InsertItem(_T("UDP "), 1,1,m_TreeRoot,TVI_LAST);
-	strItem.Format("Ô´¶Ë¿Ú: %s",m_list_udp.GetItemText(nItem,1));//È¡µÃÔ´¶Ë¿Ú
+	strItem.Format("æºç«¯å£: %s",m_list_udp.GetItemText(nItem,1));//å–å¾—æºç«¯å£
 	m_tree.InsertItem(strItem, 3,3,m_UdpHdrRoot,TVI_LAST);
-	strItem.Format("Ä¿µÄ¶Ë¿Ú: %s",m_list_udp.GetItemText(nItem,2));//È¡µÃÄ¿µÄ¶Ë¿Ú
+	strItem.Format("ç›®çš„ç«¯å£: %s",m_list_udp.GetItemText(nItem,2));//å–å¾—ç›®çš„ç«¯å£
 	m_tree.InsertItem(strItem, 3,3,m_UdpHdrRoot,TVI_LAST);
-	strItem.Format("³¤¶È: %s",m_list_udp.GetItemText(nItem,3));//È¡µÃUdp³¤¶È
+	strItem.Format("é•¿åº¦: %s",m_list_udp.GetItemText(nItem,3));//å–å¾—Udpé•¿åº¦
 	m_tree.InsertItem(strItem, 6,6,m_UdpHdrRoot,TVI_LAST);
-	strItem.Format("Ğ£ÑéºÍ: %s",m_list_udp.GetItemText(nItem,4));//È¡µÃĞ£ÑéºÍ
+	strItem.Format("æ ¡éªŒå’Œ: %s",m_list_udp.GetItemText(nItem,4));//å–å¾—æ ¡éªŒå’Œ
 	m_tree.InsertItem(strItem, 2,2,m_UdpHdrRoot,TVI_LAST);
 }
 
@@ -1714,50 +1775,50 @@ void CProtocolAnalysisDlg::ShowTcpInfo(int nItem)
 {
 	CString strItem;
 	m_TcpHdrRoot=m_tree.InsertItem(_T("TCP "), 1,1,m_TreeRoot,TVI_LAST);
-	strItem.Format("Ô´¶Ë¿Ú: %s",m_list_tcp.GetItemText(nItem,1));//È¡µÃÔ´¶Ë¿Ú
+	strItem.Format("æºç«¯å£: %s",m_list_tcp.GetItemText(nItem,1));//å–å¾—æºç«¯å£
 	m_tree.InsertItem(strItem, 3,3,m_TcpHdrRoot,TVI_LAST);
-	strItem.Format("Ä¿µÄ¶Ë¿Ú: %s",m_list_tcp.GetItemText(nItem,2));//È¡µÃÄ¿µÄ¶Ë¿Ú
+	strItem.Format("ç›®çš„ç«¯å£: %s",m_list_tcp.GetItemText(nItem,2));//å–å¾—ç›®çš„ç«¯å£
 	m_tree.InsertItem(strItem, 3,3,m_TcpHdrRoot,TVI_LAST);
-	strItem.Format("ĞòÁĞºÅ: %s",m_list_tcp.GetItemText(nItem,3));//È¡µÃĞòÁĞºÅ
+	strItem.Format("åºåˆ—å·: %s",m_list_tcp.GetItemText(nItem,3));//å–å¾—åºåˆ—å·
 	m_tree.InsertItem(strItem, 9,9,m_TcpHdrRoot,TVI_LAST);
-	strItem.Format("È·ÈÏºÅ: %s",m_list_tcp.GetItemText(nItem,4));//È¡µÃÈ·ÈÏºÅ
+	strItem.Format("ç¡®è®¤å·: %s",m_list_tcp.GetItemText(nItem,4));//å–å¾—ç¡®è®¤å·
 	m_tree.InsertItem(strItem, 9,9,m_TcpHdrRoot,TVI_LAST);
-	strItem.Format("Ê×²¿³¤¶È: %s",m_list_tcp.GetItemText(nItem,5));//È¡µÃÊ×²¿³¤¶È
+	strItem.Format("é¦–éƒ¨é•¿åº¦: %s",m_list_tcp.GetItemText(nItem,5));//å–å¾—é¦–éƒ¨é•¿åº¦
 	m_tree.InsertItem(strItem, 6,6,m_TcpHdrRoot,TVI_LAST);
-	strItem.Format("±£Áô: %s",m_list_tcp.GetItemText(nItem,6));//È¡µÃ±£Áô
+	strItem.Format("ä¿ç•™: %s",m_list_tcp.GetItemText(nItem,6));//å–å¾—ä¿ç•™
 	m_tree.InsertItem(strItem, 7,7,m_TcpHdrRoot,TVI_LAST);
-	strItem.Format("±êÖ¾: %s",m_list_tcp.GetItemText(nItem,7));//È¡µÃÈ·±êÖ¾
+	strItem.Format("æ ‡å¿—: %s",m_list_tcp.GetItemText(nItem,7));//å–å¾—ç¡®æ ‡å¿—
 	m_tree.InsertItem(strItem, 9,9,m_TcpHdrRoot,TVI_LAST);
-	strItem.Format("´°¿Ú: %s",m_list_tcp.GetItemText(nItem,8));//È¡µÃÈ·´°¿Ú
+	strItem.Format("çª—å£: %s",m_list_tcp.GetItemText(nItem,8));//å–å¾—ç¡®çª—å£
 	m_tree.InsertItem(strItem, 5,5,m_TcpHdrRoot,TVI_LAST);
-	strItem.Format("Ğ£ÑéºÍ: %s",m_list_tcp.GetItemText(nItem,9));//È¡µÃĞ£ÑéºÍ
+	strItem.Format("æ ¡éªŒå’Œ: %s",m_list_tcp.GetItemText(nItem,9));//å–å¾—æ ¡éªŒå’Œ
 	m_tree.InsertItem(strItem, 2,2,m_TcpHdrRoot,TVI_LAST);
-	strItem.Format("½ô¼±Ö¸Õë: %s",m_list_tcp.GetItemText(nItem,10));//È¡µÃÈ·ÈÏºÅ
+	strItem.Format("ç´§æ€¥æŒ‡é’ˆ: %s",m_list_tcp.GetItemText(nItem,10));//å–å¾—ç¡®è®¤å·
 	m_tree.InsertItem(strItem, 10,10,m_TcpHdrRoot,TVI_LAST);
 }
 void CProtocolAnalysisDlg::ShowArpInfo(int nItem)
 {
 	CString strItem;
 	m_ArpHdrRoot=m_tree.InsertItem(_T("ARP "), 1,1,m_TreeRoot,TVI_LAST);
-	strItem.Format("Ó²¼şµØÖ·ÀàĞÍ: %s",m_list_arp.GetItemText(nItem,1));//È¡µÃÓ²¼şµØÖ·ÀàĞÍ
+	strItem.Format("ç¡¬ä»¶åœ°å€ç±»å‹: %s",m_list_arp.GetItemText(nItem,1));//å–å¾—ç¡¬ä»¶åœ°å€ç±»å‹
 	m_tree.InsertItem(strItem, 5,5,m_ArpHdrRoot,TVI_LAST);
-	strItem.Format("Ğ­ÒéµØÖ·ÀàĞÍ: %s",m_list_arp.GetItemText(nItem,2));//È¡µÃĞ­ÒéµØÖ·ÀàĞÍ
+	strItem.Format("åè®®åœ°å€ç±»å‹: %s",m_list_arp.GetItemText(nItem,2));//å–å¾—åè®®åœ°å€ç±»å‹
 	m_tree.InsertItem(strItem, 5,5,m_ArpHdrRoot,TVI_LAST);
-	strItem.Format("Ó²¼şµØÖ·³¤¶È: %s",m_list_arp.GetItemText(nItem,3));//È¡µÃÓ²¼şµØÖ·³¤¶È
+	strItem.Format("ç¡¬ä»¶åœ°å€é•¿åº¦: %s",m_list_arp.GetItemText(nItem,3));//å–å¾—ç¡¬ä»¶åœ°å€é•¿åº¦
 	m_tree.InsertItem(strItem, 6,6,m_ArpHdrRoot,TVI_LAST);
-	strItem.Format("Ğ­ÒéµØÖ·³¤¶È: %s",m_list_arp.GetItemText(nItem,4));//È¡µÃĞ­ÒéµØÖ·³¤¶È
+	strItem.Format("åè®®åœ°å€é•¿åº¦: %s",m_list_arp.GetItemText(nItem,4));//å–å¾—åè®®åœ°å€é•¿åº¦
 	m_tree.InsertItem(strItem, 6,6,m_ArpHdrRoot,TVI_LAST);
-	strItem.Format("Arp²Ù×÷: %s",m_list_arp.GetItemText(nItem,5));//È¡µÃÓ²¼şµØÖ·³¤¶È
+	strItem.Format("Arpæ“ä½œ: %s",m_list_arp.GetItemText(nItem,5));//å–å¾—ç¡¬ä»¶åœ°å€é•¿åº¦
 	m_tree.InsertItem(strItem, 7,7,m_ArpHdrRoot,TVI_LAST);
-	HTREEITEM hItem=m_tree.GetChildItem(m_MacHdrRoot);//»ñÈ¡MACµÚÒ»¸ö½Úµã
-	m_tree.InsertItem(m_tree.GetItemText(hItem), 3,3,m_ArpHdrRoot,TVI_LAST);//·¢ËÍ¶ËMAC
-	strItem.Format("·¢ËÍ¶Ëip: %s",m_list_arp.GetItemText(nItem,7));//È¡µÃ·¢ËÍ¶Ëip
+	HTREEITEM hItem=m_tree.GetChildItem(m_MacHdrRoot);//è·å–MACç¬¬ä¸€ä¸ªèŠ‚ç‚¹
+	m_tree.InsertItem(m_tree.GetItemText(hItem), 3,3,m_ArpHdrRoot,TVI_LAST);//å‘é€ç«¯MAC
+	strItem.Format("å‘é€ç«¯ip: %s",m_list_arp.GetItemText(nItem,7));//å–å¾—å‘é€ç«¯ip
 	m_tree.InsertItem(strItem, 3,3,m_ArpHdrRoot,TVI_LAST);
 	m_tree.InsertItem(m_tree.GetItemText(m_tree.GetNextSiblingItem(hItem)),
-		3,3,m_ArpHdrRoot,TVI_LAST);	//Ä¿µÄ¶ËMAC
-	strItem.Format("Ä¿µÄ¶Ëip: %s",m_list_arp.GetItemText(nItem,8));//È¡µÃ·¢ËÍ¶Ëip
+		3,3,m_ArpHdrRoot,TVI_LAST);	//ç›®çš„ç«¯MAC
+	strItem.Format("ç›®çš„ç«¯ip: %s",m_list_arp.GetItemText(nItem,8));//å–å¾—å‘é€ç«¯ip
 	m_tree.InsertItem(strItem, 3,3,m_ArpHdrRoot,TVI_LAST);
-	strItem.Format("±¸×¢: %s",m_list_arp.GetItemText(nItem,6));//È¡µÃÓ²¼şµØÖ·³¤¶È
+	strItem.Format("å¤‡æ³¨: %s",m_list_arp.GetItemText(nItem,6));//å–å¾—ç¡¬ä»¶åœ°å€é•¿åº¦
 	m_tree.InsertItem(strItem, 9,9,m_ArpHdrRoot,TVI_LAST);
 }
 //Icmp
@@ -1765,23 +1826,23 @@ void CProtocolAnalysisDlg::ShowIcmpInfo(int nItem)
 {
 	CString strItem;
 	m_IcmpHdrRoot=m_tree.InsertItem(_T("ICMP "), 1,1,m_TreeRoot,TVI_LAST);
-	strItem.Format("ÀàĞÍ: %s",m_list_icmp.GetItemText(nItem,1));//È¡µÃÀàĞÍ
+	strItem.Format("ç±»å‹: %s",m_list_icmp.GetItemText(nItem,1));//å–å¾—ç±»å‹
 	m_tree.InsertItem(strItem, 4,4,m_IcmpHdrRoot,TVI_LAST);
-	strItem.Format("´úÂë: %s",m_list_icmp.GetItemText(nItem,2));//È¡µÃ´úÂë
+	strItem.Format("ä»£ç : %s",m_list_icmp.GetItemText(nItem,2));//å–å¾—ä»£ç 
 	m_tree.InsertItem(strItem, 9,9,m_IcmpHdrRoot,TVI_LAST);
-	strItem.Format("Ğ£ÑéºÍ: %s",m_list_icmp.GetItemText(nItem,3));//È¡µÃĞ£ÑéºÍ
+	strItem.Format("æ ¡éªŒå’Œ: %s",m_list_icmp.GetItemText(nItem,3));//å–å¾—æ ¡éªŒå’Œ
 	m_tree.InsertItem(strItem, 2,2,m_IcmpHdrRoot,TVI_LAST);
-	strItem.Format("ËµÃ÷: %s",m_list_icmp.GetItemText(nItem,4));//È¡µÃËµÃ÷
+	strItem.Format("è¯´æ˜: %s",m_list_icmp.GetItemText(nItem,4));//å–å¾—è¯´æ˜
 	m_tree.InsertItem(strItem, 9,9,m_IcmpHdrRoot,TVI_LAST);
 }
-//µ¥»÷ÁĞ±íÒ»À¸
+//å•å‡»åˆ—è¡¨ä¸€æ 
 void CProtocolAnalysisDlg::OnClickListCom(NMHDR* pNMHDR, LRESULT* pResult) 
 {
 	// TODO: Add your control notification handler code here
 	int nItem = m_list_common.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED);
 	if (nItem == -1)
 		return ;
-   //ÔÚ¾²Ì¬ÎÄ±¾ÖĞÏÔÊ¾
+   //åœ¨é™æ€æ–‡æœ¬ä¸­æ˜¾ç¤º
 	MessageBeep(65);
 	RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_list_common.GetItemData(nItem));
 	ShowPacketInfo(pRawPacket);
@@ -1798,7 +1859,7 @@ void CProtocolAnalysisDlg::OnClickListEthernet(NMHDR* pNMHDR, LRESULT* pResult)
 	RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_list_ethernet.GetItemData(nItem));
 	ShowPacketInfo(pRawPacket);
 	CString strItem;
-	strItem.Format("Ğ­ÒéÀàĞÍ: %s",m_list_ethernet.GetItemText(nItem,3));//È¡Ğ­ÒéÀàĞÍ
+	strItem.Format("åè®®ç±»å‹: %s",m_list_ethernet.GetItemText(nItem,3));//å–åè®®ç±»å‹
 	m_tree.InsertItem(strItem, 5,5,m_MacHdrRoot,TVI_LAST);
 	*pResult = 0;
 }
@@ -1827,7 +1888,7 @@ void CProtocolAnalysisDlg::OnClickListIp(NMHDR* pNMHDR, LRESULT* pResult)
 	MessageBeep(65);
 	RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_list_ip.GetItemData(nItem));
 	ShowPacketInfo(pRawPacket);
-	ShowIpInfo(pRawPacket->ip_seq);//¸ù¾İÆäip²ãµÄĞòºÅÇóÆäipĞÅÏ¢
+	ShowIpInfo(pRawPacket->ip_seq);//æ ¹æ®å…¶ipå±‚çš„åºå·æ±‚å…¶ipä¿¡æ¯
 	UpdateData(FALSE);
 	*pResult = 0;
 }
@@ -1841,7 +1902,7 @@ void CProtocolAnalysisDlg::OnClickListIcmp(NMHDR* pNMHDR, LRESULT* pResult)
 	MessageBeep(65);
 	RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_list_icmp.GetItemData(nItem));
 	ShowPacketInfo(pRawPacket);
-	ShowIpInfo(pRawPacket->ip_seq);//¸ù¾İÆäip²ãµÄĞòºÅÇóÆäipĞÅÏ¢
+	ShowIpInfo(pRawPacket->ip_seq);//æ ¹æ®å…¶ipå±‚çš„åºå·æ±‚å…¶ipä¿¡æ¯
 	ShowIcmpInfo(nItem);
 	UpdateData(FALSE);
 	*pResult = 0;
@@ -1856,8 +1917,8 @@ void CProtocolAnalysisDlg::OnClickListTcp(NMHDR* pNMHDR, LRESULT* pResult)
 	MessageBeep(65);
 	RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_list_tcp.GetItemData(nItem));
 	ShowPacketInfo(pRawPacket);
-	ShowIpInfo(pRawPacket->ip_seq);//¸ù¾İ Æäip²ãµÄĞòºÅÇóÆäipĞÅÏ¢
-	ShowTcpInfo(pRawPacket->tcpOrUdp_seq);//¸ù¾İÆä´«Êä²ãĞòºÅÏÔÊ¾Æä tcpĞÅÏ¢
+	ShowIpInfo(pRawPacket->ip_seq);//æ ¹æ® å…¶ipå±‚çš„åºå·æ±‚å…¶ipä¿¡æ¯
+	ShowTcpInfo(pRawPacket->tcpOrUdp_seq);//æ ¹æ®å…¶ä¼ è¾“å±‚åºå·æ˜¾ç¤ºå…¶ tcpä¿¡æ¯
 	UpdateData(FALSE);
 	*pResult = 0;
 }
@@ -1871,23 +1932,23 @@ void CProtocolAnalysisDlg::OnClickListHttp(NMHDR* pNMHDR, LRESULT* pResult)
 	MessageBeep(65);
 	RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_list_http.GetItemData(nItem));
 	ShowPacketInfo(pRawPacket);
-	ShowIpInfo(pRawPacket->ip_seq);//¸ù¾İÆäip²ãµÄĞòºÅÇóÆäipĞÅÏ¢
-	ShowTcpInfo(pRawPacket->tcpOrUdp_seq);//¸ù¾İÆä´«Êä²ãĞòºÅÏÔÊ¾Æä tcpĞÅÏ¢
-	//´¦ÀíÏÂhttp
+	ShowIpInfo(pRawPacket->ip_seq);//æ ¹æ®å…¶ipå±‚çš„åºå·æ±‚å…¶ipä¿¡æ¯
+	ShowTcpInfo(pRawPacket->tcpOrUdp_seq);//æ ¹æ®å…¶ä¼ è¾“å±‚åºå·æ˜¾ç¤ºå…¶ tcpä¿¡æ¯
+	//å¤„ç†ä¸‹http
 	CString strItem;
 	CString strTemp;
 	HTREEITEM httpRoot=m_tree.InsertItem(_T("HTTP"), 1,1,m_TreeRoot,TVI_LAST);
-	strItem.Format("%s",m_list_http.GetItemText(nItem,3));//È¡µÃhttpÄÚÈİ
+	strItem.Format("%s",m_list_http.GetItemText(nItem,3));//å–å¾—httpå†…å®¹
 	char buffer[BUFFER_MAX_LENGTH];
 	strcpy(buffer,(LPCTSTR)strItem);
 	buffer[strItem.GetLength()]='\0';
-	//Ã¿48¸ö×Ö·ûÎªÒ»ĞĞ ·Ö±ğÏÔÊ¾httpÄÚÈİ
+	//æ¯48ä¸ªå­—ç¬¦ä¸ºä¸€è¡Œ åˆ†åˆ«æ˜¾ç¤ºhttpå†…å®¹
 	int i=0;
 	for (;i<strItem.GetLength()/48;i++)
 	{
 		m_tree.InsertItem(CString(buffer + i*48).Left(48), 10,10,httpRoot,TVI_LAST);
 	}
-	//×îºó²»Âú48¸ö×Ö·û µ¥¶ÀÒ»ĞĞ
+	//æœ€åä¸æ»¡48ä¸ªå­—ç¬¦ å•ç‹¬ä¸€è¡Œ
 	if (strItem.GetLength()%48)
 	{
 		m_tree.InsertItem(CString(buffer + i*48), 10,10,httpRoot,TVI_LAST);
@@ -1905,8 +1966,8 @@ void CProtocolAnalysisDlg::OnClickListUdp(NMHDR* pNMHDR, LRESULT* pResult)
 	MessageBeep(65);
 	RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_list_udp.GetItemData(nItem));
 	ShowPacketInfo(pRawPacket);
-	ShowIpInfo(pRawPacket->ip_seq);//¸ù¾İÆäip²ãµÄĞòºÅÇóÆäipĞÅÏ¢
-	ShowUdpInfo(pRawPacket->tcpOrUdp_seq);//¸ù¾İÆä´«Êä²ãĞòºÅÏÔÊ¾Æä udpĞÅÏ¢
+	ShowIpInfo(pRawPacket->ip_seq);//æ ¹æ®å…¶ipå±‚çš„åºå·æ±‚å…¶ipä¿¡æ¯
+	ShowUdpInfo(pRawPacket->tcpOrUdp_seq);//æ ¹æ®å…¶ä¼ è¾“å±‚åºå·æ˜¾ç¤ºå…¶ udpä¿¡æ¯
 	UpdateData(FALSE);	
 	*pResult = 0;
 }
@@ -1920,36 +1981,36 @@ void CProtocolAnalysisDlg::OnClickListDns(NMHDR* pNMHDR, LRESULT* pResult)
 	MessageBeep(65);
 	RAW_PACKET* pRawPacket = (RAW_PACKET*)(m_list_Dns.GetItemData(nItem));
 	ShowPacketInfo(pRawPacket);
-	ShowIpInfo(pRawPacket->ip_seq);//¸ù¾İÆäip²ãµÄĞòºÅÇóÆäipĞÅÏ¢
-	ShowUdpInfo(pRawPacket->tcpOrUdp_seq);//¸ù¾İÆä´«Êä²ãĞòºÅÏÔÊ¾Æä udpĞÅÏ¢
-	//Ò»ÏÂÎªÏêÏ¸ÏÔÊ¾ÏÂDNS µÄĞÅÏ¢
+	ShowIpInfo(pRawPacket->ip_seq);//æ ¹æ®å…¶ipå±‚çš„åºå·æ±‚å…¶ipä¿¡æ¯
+	ShowUdpInfo(pRawPacket->tcpOrUdp_seq);//æ ¹æ®å…¶ä¼ è¾“å±‚åºå·æ˜¾ç¤ºå…¶ udpä¿¡æ¯
+	//ä¸€ä¸‹ä¸ºè¯¦ç»†æ˜¾ç¤ºä¸‹DNS çš„ä¿¡æ¯
 	CString strItem;
 	HTREEITEM DnsHdrRoot=m_tree.InsertItem(_T("DNS"), 1,1,m_TreeRoot,TVI_LAST);
-	strItem.Format("±êÊ¶: %s",m_list_Dns.GetItemText(nItem,1));//
+	strItem.Format("æ ‡è¯†: %s",m_list_Dns.GetItemText(nItem,1));//
 	m_tree.InsertItem(strItem, 3,3,DnsHdrRoot,TVI_LAST);
-	strItem.Format("QR(±êÖ¾): %s",m_list_Dns.GetItemText(nItem,2));//
+	strItem.Format("QR(æ ‡å¿—): %s",m_list_Dns.GetItemText(nItem,2));//
 	m_tree.InsertItem(strItem, 9,9,DnsHdrRoot,TVI_LAST);
-	strItem.Format("opcode(±êÖ¾): %s",m_list_Dns.GetItemText(nItem,3));//
+	strItem.Format("opcode(æ ‡å¿—): %s",m_list_Dns.GetItemText(nItem,3));//
 	m_tree.InsertItem(strItem, 9,9,DnsHdrRoot,TVI_LAST);
-		strItem.Format("AA(±êÖ¾): %s",m_list_Dns.GetItemText(nItem,4));//
+		strItem.Format("AA(æ ‡å¿—): %s",m_list_Dns.GetItemText(nItem,4));//
 	m_tree.InsertItem(strItem, 9,9,DnsHdrRoot,TVI_LAST);
-		strItem.Format("TC(±êÖ¾): %s",m_list_Dns.GetItemText(nItem,5));//
+		strItem.Format("TC(æ ‡å¿—): %s",m_list_Dns.GetItemText(nItem,5));//
 	m_tree.InsertItem(strItem, 9,9,DnsHdrRoot,TVI_LAST);
-		strItem.Format("RD(±êÖ¾): %s",m_list_Dns.GetItemText(nItem,6));//
+		strItem.Format("RD(æ ‡å¿—): %s",m_list_Dns.GetItemText(nItem,6));//
 	m_tree.InsertItem(strItem, 9,9,DnsHdrRoot,TVI_LAST);
-		strItem.Format("RA(±êÖ¾): %s",m_list_Dns.GetItemText(nItem,7));//
+		strItem.Format("RA(æ ‡å¿—): %s",m_list_Dns.GetItemText(nItem,7));//
 	m_tree.InsertItem(strItem, 9,9,DnsHdrRoot,TVI_LAST);
-	strItem.Format("zero(±êÖ¾): %s",m_list_Dns.GetItemText(nItem,8));//
+	strItem.Format("zero(æ ‡å¿—): %s",m_list_Dns.GetItemText(nItem,8));//
 	m_tree.InsertItem(strItem, 9,9,DnsHdrRoot,TVI_LAST);
-		strItem.Format("rcode(±êÖ¾): %s",m_list_Dns.GetItemText(nItem,9));//
+		strItem.Format("rcode(æ ‡å¿—): %s",m_list_Dns.GetItemText(nItem,9));//
 	m_tree.InsertItem(strItem, 9,9,DnsHdrRoot,TVI_LAST);
-		strItem.Format("ÎÊÌâÊı: %s",m_list_Dns.GetItemText(nItem,10));//
+		strItem.Format("é—®é¢˜æ•°: %s",m_list_Dns.GetItemText(nItem,10));//
 	m_tree.InsertItem(strItem, 2,2,DnsHdrRoot,TVI_LAST);
-		strItem.Format("×ÊÔ´¼ÇÂ¼Êı: %s",m_list_Dns.GetItemText(nItem,11));//
+		strItem.Format("èµ„æºè®°å½•æ•°: %s",m_list_Dns.GetItemText(nItem,11));//
 	m_tree.InsertItem(strItem, 2,2,DnsHdrRoot,TVI_LAST);
-		strItem.Format("ÊÚÈ¨×ÊÔ´¼ÇÂ¼Êı: %s",m_list_Dns.GetItemText(nItem,12));//
+		strItem.Format("æˆæƒèµ„æºè®°å½•æ•°: %s",m_list_Dns.GetItemText(nItem,12));//
 	m_tree.InsertItem(strItem, 2,2,DnsHdrRoot,TVI_LAST);
-		strItem.Format("¶îÍâ×ÊÔ´¼ÇÂ¼Êı: %s",m_list_Dns.GetItemText(nItem,13));//
+		strItem.Format("é¢å¤–èµ„æºè®°å½•æ•°: %s",m_list_Dns.GetItemText(nItem,13));//
 	m_tree.InsertItem(strItem, 2,2,DnsHdrRoot,TVI_LAST);
 	UpdateData(FALSE);	
 	*pResult = 0;
@@ -1962,7 +2023,7 @@ void CProtocolAnalysisDlg::ReleaseAll()
 		if (m_list_common.GetItemData(i))
 		{
 			RAW_PACKET *p =(RAW_PACKET*)(m_list_common.GetItemData(i));
-			delete [](p->pPktData);//ÊÍ·ÅÉêÇëµÄÄÚ´æ
+			delete [](p->pPktData);//é‡Šæ”¾ç”³è¯·çš„å†…å­˜
 			delete p;
 			p=NULL;
 		}
@@ -1988,7 +2049,7 @@ void CProtocolAnalysisDlg::OnBtclear()
 	m_nPacket=m_nArp=m_nIp=m_nHttp=0;
 	m_Ethernet=m_nTcp=m_nUdp=m_nIcmp=0;
 	CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_PACKET_COUNT);
-	p->SetWindowText (_T("Êı¾İ°ü¸öÊı: 0"));
+	p->SetWindowText (_T("æ•°æ®åŒ…ä¸ªæ•°: 0"));
 	UpdateWindow();
 }
 
@@ -1998,13 +2059,13 @@ void CProtocolAnalysisDlg::OnRestart()
 	OnBtclear();
 	OnStart();
 }
-//cListCtrlµÄÒ»Ğ©Ê¹ÓÃ·½·¨
+//cListCtrlçš„ä¸€äº›ä½¿ç”¨æ–¹æ³•
 //http://wenku.baidu.com/view/3bf601ddd15abe23482f4d79.html 
 void CProtocolAnalysisDlg::OnmenuFirst() 
 {
 	// TODO: Add your command handler code here
 	m_pCurrentList->SetFocus();
-	m_pCurrentList->EnsureVisible(0,FALSE);//ÏÔÊ¾Ê×Ìõ
+	m_pCurrentList->EnsureVisible(0,FALSE);//æ˜¾ç¤ºé¦–æ¡
 
 }
 
@@ -2025,36 +2086,36 @@ void CProtocolAnalysisDlg::OnmenuCenter()
 bool CProtocolAnalysisDlg::TrayMyIcon(bool bAdd)
 {
 	BOOL bRet = false;
-	m_Ntnd.cbSize = sizeof(NOTIFYICONDATA); //ÉèÖÃÈÎÎñÍĞÅÌÓĞ¹Ø½á¹¹´óĞ¡
-	m_Ntnd.hWnd = GetSafeHwnd(); // Èç¹û¶ÔÍĞÅÌÖĞµÄÍ¼±ê½øĞĞ²Ù×÷£¬ÏàÓ¦µÄÏûÏ¢¾Í´«¸øÕâ¸ö¾ä±úËù´ú±íµÄ´°¿Ú
-	m_Ntnd.uID = IDR_MAINFRAME; // ÉèÖÃÍĞÅÌÍ¼±êID
+	m_Ntnd.cbSize = sizeof(NOTIFYICONDATA); //è®¾ç½®ä»»åŠ¡æ‰˜ç›˜æœ‰å…³ç»“æ„å¤§å°
+	m_Ntnd.hWnd = GetSafeHwnd(); // å¦‚æœå¯¹æ‰˜ç›˜ä¸­çš„å›¾æ ‡è¿›è¡Œæ“ä½œï¼Œç›¸åº”çš„æ¶ˆæ¯å°±ä¼ ç»™è¿™ä¸ªå¥æŸ„æ‰€ä»£è¡¨çš„çª—å£
+	m_Ntnd.uID = IDR_MAINFRAME; // è®¾ç½®æ‰˜ç›˜å›¾æ ‡ID
 	if ( bAdd == TRUE )
 	{
-		// Õâ¸ö³ÉÔ±±êÖ¾×ÅÆäËûÄÄĞ©³ÉÔ±µÄÊı¾İÊÇÓĞĞ§µÄ£¬·Ö±ğÎª
-		// NIF_ICON, NIF_MESSAGE, NIF_TIP£¬·Ö±ğ´ú±í×ÅÊı¾İÓĞĞ§µÄ³ÉÔ±ÊÇhIcon, uCallbackMessage, szTip
+		// è¿™ä¸ªæˆå‘˜æ ‡å¿—ç€å…¶ä»–å“ªäº›æˆå‘˜çš„æ•°æ®æ˜¯æœ‰æ•ˆçš„ï¼Œåˆ†åˆ«ä¸º
+		// NIF_ICON, NIF_MESSAGE, NIF_TIPï¼Œåˆ†åˆ«ä»£è¡¨ç€æ•°æ®æœ‰æ•ˆçš„æˆå‘˜æ˜¯hIcon, uCallbackMessage, szTip
 		m_Ntnd.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
-		// ÕâÊÇ¸öÏûÏ¢±êÖ¾£¬µ±ÓÃÊó±ê¶ÔÍĞÅÌÇøÏàÓ¦Í¼±ê½øĞĞ²Ù×÷µÄÊ±ºò£¬¾Í»á´«µİÏûÏ¢¸øHwndËù´ú±íµÄ´°¿Ú
-		m_Ntnd.uCallbackMessage = WM_TRAYICON_MSG; ;// ×Ô¶¨ÒåµÄÏûÏ¢Ãû³Æ
-		// ÒªÔö¼Ó£¬É¾³ı»òĞŞ¸ÄµÄÍ¼±ê¾ä±ú
+		// è¿™æ˜¯ä¸ªæ¶ˆæ¯æ ‡å¿—ï¼Œå½“ç”¨é¼ æ ‡å¯¹æ‰˜ç›˜åŒºç›¸åº”å›¾æ ‡è¿›è¡Œæ“ä½œçš„æ—¶å€™ï¼Œå°±ä¼šä¼ é€’æ¶ˆæ¯ç»™Hwndæ‰€ä»£è¡¨çš„çª—å£
+		m_Ntnd.uCallbackMessage = WM_TRAYICON_MSG; ;// è‡ªå®šä¹‰çš„æ¶ˆæ¯åç§°
+		// è¦å¢åŠ ï¼Œåˆ é™¤æˆ–ä¿®æ”¹çš„å›¾æ ‡å¥æŸ„
 		m_Ntnd.hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_MAINFRAME));
-		// Êó±êÒÆ¶¯µ½ÍĞÅÌÍ¼±êÉÏÊ±µÄÌáÊ¾ÎÄ×Ö
-		strncpy(m_Ntnd.szTip, _T("ÍøÂç°ü½Ø»ñ·ÖÎöÏµÍ³"), sizeof(m_Ntnd.szTip));
-		ShowWindow(SW_MINIMIZE);// ×îĞ¡»¯
-		ShowWindow(SW_HIDE);// Òş²ØÖ÷´°¿Ú
-		bRet = Shell_NotifyIcon(NIM_ADD, &m_Ntnd);// ÏòÏµÍ³´«µİÏûÏ¢£¬ÒÔÌí¼ÓÍĞÅÌÇøµÄÍ¼±ê
+		// é¼ æ ‡ç§»åŠ¨åˆ°æ‰˜ç›˜å›¾æ ‡ä¸Šæ—¶çš„æç¤ºæ–‡å­—
+		strncpy(m_Ntnd.szTip, _T("ç½‘ç»œåŒ…æˆªè·åˆ†æç³»ç»Ÿ"), sizeof(m_Ntnd.szTip));
+		ShowWindow(SW_MINIMIZE);// æœ€å°åŒ–
+		ShowWindow(SW_HIDE);// éšè—ä¸»çª—å£
+		bRet = Shell_NotifyIcon(NIM_ADD, &m_Ntnd);// å‘ç³»ç»Ÿä¼ é€’æ¶ˆæ¯ï¼Œä»¥æ·»åŠ æ‰˜ç›˜åŒºçš„å›¾æ ‡
 	}
 	else
 	{
-		ShowWindow(SW_SHOWNA); // ÏÔÊ¾´°¿Ú
-		SetForegroundWindow(); // °Ñ´°¿ÚÉèÖÃÔÚÇ°
-		bRet = Shell_NotifyIcon(NIM_DELETE, &m_Ntnd);// ÏòÏµÍ³´«µİÏûÏ¢ É¾³ıÍĞÅÌÇøµÄÍ¼±ê
+		ShowWindow(SW_SHOWNA); // æ˜¾ç¤ºçª—å£
+		SetForegroundWindow(); // æŠŠçª—å£è®¾ç½®åœ¨å‰
+		bRet = Shell_NotifyIcon(NIM_DELETE, &m_Ntnd);// å‘ç³»ç»Ÿä¼ é€’æ¶ˆæ¯ åˆ é™¤æ‰˜ç›˜åŒºçš„å›¾æ ‡
 	}
 	return bRet;
 }
-// µ±ÓÃ»§ÓÃÊó±êµã»÷ÍĞÅÌÇøµÄÍ¼±êµÄÊ±ºò(ÎŞÂÛÊÇ×ó¼ü»¹ÊÇÓÒ¼ü),»áÏòhWndËù´ú±íµÄ´°¿Ú´«ËÍÏûÏ¢
+// å½“ç”¨æˆ·ç”¨é¼ æ ‡ç‚¹å‡»æ‰˜ç›˜åŒºçš„å›¾æ ‡çš„æ—¶å€™(æ— è®ºæ˜¯å·¦é”®è¿˜æ˜¯å³é”®),ä¼šå‘hWndæ‰€ä»£è¡¨çš„çª—å£ä¼ é€æ¶ˆæ¯
 LRESULT CProtocolAnalysisDlg::OnTrayCallBackMsg(WPARAM wparam, LPARAM lparam)
 {
-	//wParam½ÓÊÕµÄÊÇÍ¼±êµÄID£¬¶ølParam½ÓÊÕµÄÊÇÊó±êµÄĞĞÎª
+	//wParamæ¥æ”¶çš„æ˜¯å›¾æ ‡çš„IDï¼Œè€ŒlParamæ¥æ”¶çš„æ˜¯é¼ æ ‡çš„è¡Œä¸º
 	if(wparam!=IDR_MAINFRAME)
 		return 0;
 	switch(lparam)
@@ -2065,33 +2126,33 @@ LRESULT CProtocolAnalysisDlg::OnTrayCallBackMsg(WPARAM wparam, LPARAM lparam)
 			CPoint pt;
 			mMenu.LoadMenu(IDR_MENU2);
 			pMenu = mMenu.GetSubMenu(0);
-			GetCursorPos(&pt);//µÃµ½Êó±êÎ»ÖÃ
+			GetCursorPos(&pt);//å¾—åˆ°é¼ æ ‡ä½ç½®
 			SetForegroundWindow();
-			//È·¶¨µ¯³öÊ½²Ëµ¥µÄÎ»ÖÃ
+			//ç¡®å®šå¼¹å‡ºå¼èœå•çš„ä½ç½®
 			pMenu->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, this);
-			//×ÊÔ´»ØÊÕ
+			//èµ„æºå›æ”¶
 			HMENU hmenu=mMenu.Detach();
 			mMenu.DestroyMenu();
 			break;
 		}
-	case WM_LBUTTONDBLCLK: // µ¥»÷ÈÎÎñÍĞÅÌÍ¼±ê
-		ShowWindow(SW_RESTORE);// ¼¤»î´°¿Ú
-		SetForegroundWindow(); // ÏÔÊ¾×îÇ°
-		TrayMyIcon(false);  // È¡ÏûÍĞÅÌ
+	case WM_LBUTTONDBLCLK: // å•å‡»ä»»åŠ¡æ‰˜ç›˜å›¾æ ‡
+		ShowWindow(SW_RESTORE);// æ¿€æ´»çª—å£
+		SetForegroundWindow(); // æ˜¾ç¤ºæœ€å‰
+		TrayMyIcon(false);  // å–æ¶ˆæ‰˜ç›˜
 		break;
 	default:
 		break;
 	}
 	return 1;
 }
-//ÏÔÊ¾Ö÷³ÌĞò½çÃæ
+//æ˜¾ç¤ºä¸»ç¨‹åºç•Œé¢
 void CProtocolAnalysisDlg::OnMenuShow() 
 {
 	// TODO: Add your command handler code here
-	ShowWindow(SW_RESTORE); // ÏÔÊ¾´°¿Ú
-	TrayMyIcon(FALSE);// È¡ÏûÍĞÅÌ
+	ShowWindow(SW_RESTORE); // æ˜¾ç¤ºçª—å£
+	TrayMyIcon(FALSE);// å–æ¶ˆæ‰˜ç›˜
 }
-//ÍË³ö³ÌĞò
+//é€€å‡ºç¨‹åº
 void CProtocolAnalysisDlg::OnMenuQuit() 
 {
 	// TODO: Add your command handler code here
@@ -2101,7 +2162,7 @@ void CProtocolAnalysisDlg::OnMenuQuit()
 void CProtocolAnalysisDlg::OnIfSave() 
 {
 	// TODO: Add your command handler code here
-	// ¸ù¾İÉÏ´ÎÑ¡ÔñÉèÖÃ Check  ×´Ì¬
+	// æ ¹æ®ä¸Šæ¬¡é€‰æ‹©è®¾ç½® Check  çŠ¶æ€
 	UINT state = m_Psubmenu->GetMenuState(MENU_IF_SAVE, MF_BYCOMMAND);
 	ASSERT(state != 0xFFFFFFFF);
 	if (state & MF_CHECKED)
@@ -2115,17 +2176,17 @@ void CProtocolAnalysisDlg::OnIfSave()
 		m_SaveDumpFile=true;
 	}
 }
-//´¦ÀíÁĞ±í¿òÊó±êÓÒ»÷ÏûÏ¢
-void CProtocolAnalysisDlg::ProcessRClickList()//iSubItem´Ó0¿ªÊ¼
+//å¤„ç†åˆ—è¡¨æ¡†é¼ æ ‡å³å‡»æ¶ˆæ¯
+void CProtocolAnalysisDlg::ProcessRClickList()//iSubItemä»0å¼€å§‹
 {
 	  int nCount= 0;
-	  /*»ñÈ¡ÁĞ±íÊÓÍ¼¿Ø¼şµÄ±êÌâ¿Ø¼ş*/
+	  /*è·å–åˆ—è¡¨è§†å›¾æ§ä»¶çš„æ ‡é¢˜æ§ä»¶*/
 	  CHeaderCtrl *pHeaderCtrl =m_pCurrentList->GetHeaderCtrl(); 
-	  /*"±êÍ·¿Ø¼ş"ÊÇÒ»¸ö´°¿Ú,Í¨³£ÔÚÎÄ±¾»òÊı¾İ¶¥²¿,Ëü°üº¬ÁĞÃû×Ö,¿É
-	  ÒÔ±»²ğ·Ö,ÓÃ»§¿ÉÒÔÍÏ¶¯·Ö¸ôÏßÀ´·Ö¿ª¸÷¸ö²¿·Ö,ÒÔÉèÖÃ¸÷ÁĞµÄ¿í¶È*/
+	  /*"æ ‡å¤´æ§ä»¶"æ˜¯ä¸€ä¸ªçª—å£,é€šå¸¸åœ¨æ–‡æœ¬æˆ–æ•°æ®é¡¶éƒ¨,å®ƒåŒ…å«åˆ—åå­—,å¯
+	  ä»¥è¢«æ‹†åˆ†,ç”¨æˆ·å¯ä»¥æ‹–åŠ¨åˆ†éš”çº¿æ¥åˆ†å¼€å„ä¸ªéƒ¨åˆ†,ä»¥è®¾ç½®å„åˆ—çš„å®½åº¦*/
 	  if(pHeaderCtrl!= NULL)
-		  nCount = pHeaderCtrl->GetItemCount();//»ñµÃÒ»ĞĞÓĞ¶àÉÙÁĞ
-	  if (m_iSubItem<nCount)//¸¡¶¯²Ëµ¥Ö»ÏÔÊ¾ÁĞ¿ò½öÓĞµÄÁĞÉÏ
+		  nCount = pHeaderCtrl->GetItemCount();//è·å¾—ä¸€è¡Œæœ‰å¤šå°‘åˆ—
+	  if (m_iSubItem<nCount)//æµ®åŠ¨èœå•åªæ˜¾ç¤ºåˆ—æ¡†ä»…æœ‰çš„åˆ—ä¸Š
 	  {
 		  DWORD dwPos = GetMessagePos();
 		  CPoint point( LOWORD(dwPos), HIWORD(dwPos) );
@@ -2133,27 +2194,27 @@ void CProtocolAnalysisDlg::ProcessRClickList()//iSubItem´Ó0¿ªÊ¼
 		  VERIFY( menu.LoadMenu(IDR_MENU3));
 		  CMenu* popup = menu.GetSubMenu(0);
 		  ASSERT( popup != NULL );
-		  /*µ¯³ö¸¡¶¯²Ëµ¥*/
+		  /*å¼¹å‡ºæµ®åŠ¨èœå•*/
 		  popup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y,this);
 	  }
 }
-//´¦Àí¸´ÖÆ²Ëµ¥ÏûÏ¢
+//å¤„ç†å¤åˆ¶èœå•æ¶ˆæ¯
 void CProtocolAnalysisDlg::OnCopy() 
 {
 	// TODO: Add your command handler code here
-	if(OpenClipboard())//´ò¿ª¼ôÌù°å
+	if(OpenClipboard())//æ‰“å¼€å‰ªè´´æ¿
 	{
 		CString str;
 		HANDLE hClip;
 		char *pBuf;
-		EmptyClipboard();//Çå¿Õ¼ôÌù°å
-		str=m_pCurrentList->GetItemText(m_nItem,m_iSubItem);//»ñµÃÎÄ±¾
-		hClip=::GlobalAlloc(GMEM_MOVEABLE,str.GetLength()+1);//´Ó¶ÑÖĞ·ÖÅäÄÚ´æ
-		pBuf=(char*)GlobalLock(hClip);//¶ÔÄÚ´æ¼ÓËø
-		strcpy(pBuf,str);//¿½±´µ½·ÖÅäµÄÄÚ´æÖĞ
-		GlobalUnlock(hClip);//½âËø
+		EmptyClipboard();//æ¸…ç©ºå‰ªè´´æ¿
+		str=m_pCurrentList->GetItemText(m_nItem,m_iSubItem);//è·å¾—æ–‡æœ¬
+		hClip=::GlobalAlloc(GMEM_MOVEABLE,str.GetLength()+1);//ä»å †ä¸­åˆ†é…å†…å­˜
+		pBuf=(char*)GlobalLock(hClip);//å¯¹å†…å­˜åŠ é”
+		strcpy(pBuf,str);//æ‹·è´åˆ°åˆ†é…çš„å†…å­˜ä¸­
+		GlobalUnlock(hClip);//è§£é”
 		SetClipboardData(CF_TEXT,hClip);
-		CloseClipboard();//¹Ø±Õ¼ôÌù°å
+		CloseClipboard();//å…³é—­å‰ªè´´æ¿
 	}
 }
 
@@ -2177,7 +2238,7 @@ void CProtocolAnalysisDlg::OnIgnoreSrcIp()
 			RAW_PACKET *p =(RAW_PACKET*)(m_pCurrentList->GetItemData(i));
 			if (p)
 			{
-				delete [](p->pPktData);//ÊÍ·ÅÉêÇëµÄÄÚ´æ
+				delete [](p->pPktData);//é‡Šæ”¾ç”³è¯·çš„å†…å­˜
 				delete p;
 				p=NULL;
 			}
@@ -2206,7 +2267,7 @@ void CProtocolAnalysisDlg::OnIgnoreDestIp()
 			RAW_PACKET *p =(RAW_PACKET*)(m_pCurrentList->GetItemData(i));
 			if (p)
 			{
-				delete [](p->pPktData);//ÊÍ·ÅÉêÇëµÄÄÚ´æ
+				delete [](p->pPktData);//é‡Šæ”¾ç”³è¯·çš„å†…å­˜
 				delete p;
 				p=NULL;
 			}
@@ -2340,7 +2401,7 @@ void CProtocolAnalysisDlg::OnSkin()
 	VERIFY( menu.LoadMenu(IDR_MENU4));
 	CMenu* popup = menu.GetSubMenu(0);
 	ASSERT( popup != NULL );
-	/*µ¯³ö¸¡¶¯²Ëµ¥*/
+	/*å¼¹å‡ºæµ®åŠ¨èœå•*/
 	popup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y,this);
 }
 
@@ -2374,14 +2435,14 @@ void CProtocolAnalysisDlg::OnSkinRe()
 	// TODO: Add your command handler code here
 	pSkinFun(_T("skin\\pixos.she"), NULL);
 }
-/*´¦ÀíË«»÷Ê÷½Úµã,´ËÊ±ÔÚÔ­Ê¼Êı¾İÖĞÑ¡ÖĞËùÑ¡µÄ±¨ÎÄ*/
+/*å¤„ç†åŒå‡»æ ‘èŠ‚ç‚¹,æ­¤æ—¶åœ¨åŸå§‹æ•°æ®ä¸­é€‰ä¸­æ‰€é€‰çš„æŠ¥æ–‡*/
 void CProtocolAnalysisDlg::OnDblclkTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
 	// TODO: Add your control notification handler code here
 	HTREEITEM hTreeItem = m_tree.GetSelectedItem();
-	CString str=m_tree.GetItemText(hTreeItem);//»ñµÃÑ¡ÖĞµÄ½ÚµãÎÄ±¾
+	CString str=m_tree.GetItemText(hTreeItem);//è·å¾—é€‰ä¸­çš„èŠ‚ç‚¹æ–‡æœ¬
 	int start=0,end=0;
-	/*¸ù¾İ½ÚµãµÄÎÄ±¾ÖµÅĞ¶ÏÎªÊ²Ã´Ğ­Òé±¨ÎÄ*/
+	/*æ ¹æ®èŠ‚ç‚¹çš„æ–‡æœ¬å€¼åˆ¤æ–­ä¸ºä»€ä¹ˆåè®®æŠ¥æ–‡*/
 	if (str.Find("MAC header",0)!=-1)
 	{
 		start=5;
@@ -2423,7 +2484,7 @@ void CProtocolAnalysisDlg::OnDblclkTree(NMHDR* pNMHDR, LRESULT* pResult)
 		end=-1;
 	}
 	m_EditCtrl.HideSelection(FALSE, FALSE);
-	m_EditCtrl.SetSel(start, end); //ÉèÖÃ´¦ÀíÇøÓò
+	m_EditCtrl.SetSel(start, end); //è®¾ç½®å¤„ç†åŒºåŸŸ
 	*pResult = 0;
 }
 
