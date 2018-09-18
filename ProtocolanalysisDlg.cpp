@@ -779,7 +779,7 @@ void CProtocolAnalysisDlg::OnRecvMsg(char * pbuf, int nsize)
 
 	pRawPacket->pPacketInfo = pi;
 
-	OnPacket(0, (LPARAM)pRawPacket);
+	PostMessage(WM_MY_MESSAGE_COMMON,0, (LPARAM)pRawPacket);
 }
 
 LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
@@ -789,6 +789,59 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	if (prp)
 	{
 		pi = prp->pPacketInfo;
+	}
+
+	int nsize = 100;
+
+	if (strcmp(pi->SourcePort, "") == 0)
+	{
+		LPBYTE pData = prp->pPktData;
+		MsgInfo * pmi = (MsgInfo *)pData;
+		switch(pmi->nType)
+		{
+		case eMt_send:
+			{
+				strcpy(pi->NetType, "send");
+				nsize = pmi->data.si.nLen;
+				sprintf(pi->SourceAddr, "0x%x", pmi->data.si.sock);
+			}
+			break;
+		case eMt_sendto:
+			{
+				strcpy(pi->NetType, "sendto");
+				nsize = pmi->data.si.nLen;
+				sprintf(pi->SourceAddr, "0x%x", pmi->data.si.sock);
+			}
+			break;
+		case eMt_WSASend:
+			{
+				strcpy(pi->NetType, "WSASend");
+				nsize = pmi->data.si.nLen;
+				sprintf(pi->SourceAddr, "0x%x", pmi->data.si.sock);
+			}
+			break;
+		case eMt_recv:
+			{
+				strcpy(pi->NetType, "recv");
+				nsize = pmi->data.ri.nLen;
+				sprintf(pi->DestinationAddr, "0x%x", pmi->data.ri.sock);
+			}
+			break;
+		case eMt_recvfrom:
+			{
+				strcpy(pi->NetType, "recvfrom");
+				nsize = pmi->data.ri.nLen;
+				sprintf(pi->DestinationAddr, "0x%x", pmi->data.ri.sock);
+			}
+			break;
+		case eMt_WSARecv:
+			{
+				strcpy(pi->NetType, "WSARecv");
+				nsize = pmi->data.ri.nLen;
+				sprintf(pi->DestinationAddr, "0x%x", pmi->data.ri.sock);
+			}
+			break;
+		}
 	}
 
 	char str[10]; 
@@ -809,8 +862,15 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	CString sTime = dt.Format("%H:%M:%S");
 	m_list_common.SetItemText(nIdx, 8, (LPCTSTR)sTime);
 	char sText[200] = {0};
-	int nsize = 100;
-	CMyAnalysiser::GetInstance()->DispBuffer(prp, sText, nsize);
+
+	if (strcmp(pi->SourcePort, "") != 0)
+	{
+		CMyAnalysiser::GetInstance()->DispBuffer(prp, sText, nsize);
+	}
+	else
+	{
+		nsize = 
+	}
 
 	sprintf(str, "0x%x", nsize);
 	m_list_common.SetItemText(nIdx, 9, str);
