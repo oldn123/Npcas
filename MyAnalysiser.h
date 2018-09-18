@@ -15,6 +15,7 @@ public:
 	~CMyAnalysiser(void);
 
 	static CMyAnalysiser * GetInstance();
+	static void hextostr(char *ptr,unsigned char *buf,int len);
 
 public:
 	bool	OnPackageCome(int nPackageType, PacketInformation* pi, RAW_PACKET* pPacket);
@@ -24,6 +25,9 @@ public:
 	
 	bool	IsSrcIpInIgnore(const char * ip);
 	bool	IsDstIpInIgnore(const char * ip);
+
+	bool	IsNeedSend(){return m_bSend;}
+	bool	IsNeedRecv(){return m_bRecv;}
 
 	bool	SetMonitorProcess(const char *);
 	map<DWORD,bool> * GetPortMap(bool bUdp){return bUdp ? &m_monitorPorts_udp : &m_monitorPorts_tcp; }

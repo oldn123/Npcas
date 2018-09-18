@@ -181,7 +181,7 @@ bool CMyAnalysiser::OnPackageCome(int nPackageType, PacketInformation* pi, RAW_P
 	return true;
 }
 
-void hextostr(char *ptr,unsigned char *buf,int len)
+void CMyAnalysiser::hextostr(char *ptr,unsigned char *buf,int len)
 {
 	if (len > 999)
 	{

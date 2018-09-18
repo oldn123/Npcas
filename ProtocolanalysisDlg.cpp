@@ -656,6 +656,8 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	ShowWindow(SW_MAXIMIZE); 
 	g_pdlg=this;
 
+	CheckDlgButton(IDC_CHECK_SEND, true);
+	CheckDlgButton(IDC_CHECK_RECV, true);
 
 	char mac[64] = {0};
 	char mip[64] = {0};
@@ -767,6 +769,7 @@ void CProtocolAnalysisDlg::OnRecvMsg(char * pbuf, int nsize)
 	memset(pi, 0, sizeof(PacketInformation));
 
 	RAW_PACKET* pRawPacket = new RAW_PACKET;
+	pRawPacket->nDataOffset = sizeof(MsgInfo)-4;
 	pRawPacket->pPacketInfo = NULL;
 	pRawPacket->ip_seq =0;//包序号为初始为 0
 	pRawPacket->tcpOrUdp_seq =0;
@@ -792,6 +795,7 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	}
 
 	int nsize = 100;
+	char sText[200] = {0};
 
 	if (strcmp(pi->SourcePort, "") == 0)
 	{
@@ -804,6 +808,7 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 				strcpy(pi->NetType, "send");
 				nsize = pmi->data.si.nLen;
 				sprintf(pi->SourceAddr, "0x%x", pmi->data.si.sock);
+				CMyAnalysiser::GetInstance()->hextostr(sText,(unsigned char *)&pmi->data.si.data,100 < nsize ? 100 : nsize);
 			}
 			break;
 		case eMt_sendto:
@@ -811,6 +816,8 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 				strcpy(pi->NetType, "sendto");
 				nsize = pmi->data.si.nLen;
 				sprintf(pi->SourceAddr, "0x%x", pmi->data.si.sock);
+
+				CMyAnalysiser::GetInstance()->hextostr(sText,(unsigned char *)&pmi->data.si.data,100 < nsize ? 100 : nsize);
 			}
 			break;
 		case eMt_WSASend:
@@ -818,6 +825,8 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 				strcpy(pi->NetType, "WSASend");
 				nsize = pmi->data.si.nLen;
 				sprintf(pi->SourceAddr, "0x%x", pmi->data.si.sock);
+
+				CMyAnalysiser::GetInstance()->hextostr(sText,(unsigned char *)&pmi->data.si.data,100 < nsize ? 100 : nsize);
 			}
 			break;
 		case eMt_recv:
@@ -825,6 +834,8 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 				strcpy(pi->NetType, "recv");
 				nsize = pmi->data.ri.nLen;
 				sprintf(pi->DestinationAddr, "0x%x", pmi->data.ri.sock);
+
+				CMyAnalysiser::GetInstance()->hextostr(sText,(unsigned char *)&pmi->data.ri.data,100 < nsize ? 100 : nsize);
 			}
 			break;
 		case eMt_recvfrom:
@@ -832,6 +843,8 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 				strcpy(pi->NetType, "recvfrom");
 				nsize = pmi->data.ri.nLen;
 				sprintf(pi->DestinationAddr, "0x%x", pmi->data.ri.sock);
+
+				CMyAnalysiser::GetInstance()->hextostr(sText,(unsigned char *)&pmi->data.ri.data,100 < nsize ? 100 : nsize);
 			}
 			break;
 		case eMt_WSARecv:
@@ -839,8 +852,46 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 				strcpy(pi->NetType, "WSARecv");
 				nsize = pmi->data.ri.nLen;
 				sprintf(pi->DestinationAddr, "0x%x", pmi->data.ri.sock);
+
+				CMyAnalysiser::GetInstance()->hextostr(sText,(unsigned char *)&pmi->data.ri.data,100 < nsize ? 100 : nsize);
 			}
 			break;
+		}
+		prp->PktHeader.caplen = nsize;
+		bool bIg = false;
+		if (strcmp(pi->SourceAddr, "") != 0)
+		{
+			if (!CMyAnalysiser::GetInstance()->IsNeedSend())
+			{
+				bIg = true;
+			}
+
+			if (!bIg && CMyAnalysiser::GetInstance()->IsSrcIpInIgnore(pi->SourceAddr))
+			{
+				bIg = true;
+			}
+		}
+		
+		if (!bIg && strcmp(pi->DestinationAddr, "") != 0)
+		{
+			if (!CMyAnalysiser::GetInstance()->IsNeedRecv())
+			{
+				bIg = true;
+			}
+
+			if (!bIg && CMyAnalysiser::GetInstance()->IsDstIpInIgnore(pi->DestinationAddr))
+			{
+				bIg = true;
+			}	
+		}
+
+		if (bIg)
+		{
+			delete pi;
+			delete [] prp->pPktData;
+			delete prp;
+
+			return 0;
 		}
 	}
 
@@ -861,15 +912,10 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	COleDateTime dt = COleDateTime::GetCurrentTime();
 	CString sTime = dt.Format("%H:%M:%S");
 	m_list_common.SetItemText(nIdx, 8, (LPCTSTR)sTime);
-	char sText[200] = {0};
 
 	if (strcmp(pi->SourcePort, "") != 0)
 	{
 		CMyAnalysiser::GetInstance()->DispBuffer(prp, sText, nsize);
-	}
-	else
-	{
-		nsize = 
 	}
 
 	sprintf(str, "0x%x", nsize);
@@ -1704,7 +1750,8 @@ void CProtocolAnalysisDlg::ShowPacketInfo(RAW_PACKET* pRawPacket)
 		CString strTmp=_T(""); 
 		UCHAR cTmp;	
 		UINT i=0;
-		for (; i<pRawPacket->PktHeader.caplen; i++)
+		int nlen = pRawPacket->PktHeader.caplen;
+		for (; i<nlen; i++)
 		{
 			//插入行号
 			if (i%16 == 0)
@@ -1715,7 +1762,7 @@ void CProtocolAnalysisDlg::ShowPacketInfo(RAW_PACKET* pRawPacket)
 				strLineAscii.Empty();
 			}
 			//插入数据
-			cTmp = *(pRawPacket->pPktData+i);
+			cTmp = *(pRawPacket->pPktData+i + pRawPacket->nDataOffset);
 			strTmp.Format("%02X ", cTmp);
 			strLineHex += strTmp;
 			if (isprint(cTmp))

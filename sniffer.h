@@ -25,7 +25,7 @@ typedef struct
 	u_int tcpOrUdp_seq;//传输层截获的包序号
 
 	PacketInformation * pPacketInfo;
-
+	int nDataOffset;	//buffer显示偏移
 } RAW_PACKET;
 int CapturePacket();
 int DumpFileOperation();
