@@ -22,7 +22,20 @@ public:
 	
 	void	AddToIgnoreSrcIp(const char * ip);
 	void	AddToIgnoreDestIp(const char * ip);
-	
+
+	void	AddToIgnoreSrcPort(const char * sPort);
+	void	AddToIgnoreDestPort(const char * sPort);
+
+	void	ResetJustShow();
+	void	AddToShowOnlySrcPort(const char * sPort);
+	void	AddToShowOnlyDestPort(const char * sPort);
+
+	bool	IsSrcPortInJustView(const char * sPort);
+	bool	IsDstPortInJustView(const char * sPort);
+
+	bool	IsSrcPortInIgnore(const char * sPort);
+	bool	IsDstPortInIgnore(const char * sPort);
+
 	bool	IsSrcIpInIgnore(const char * ip);
 	bool	IsDstIpInIgnore(const char * ip);
 
@@ -47,6 +60,12 @@ protected:
 	static CMyAnalysiser * m_pInstance;
 	set<string>				m_ignoreDestIp;
 	set<string>				m_ignoreSrcIp;
+
+	set<string>				m_ignoreDestPort;
+	set<string>				m_ignoreSrcPort;
+
+	set<string>				m_justViewDstPort;
+	set<string>				m_justViewSrcPort;
 
 	map<DWORD,bool>			m_monitorPorts_tcp;
 	map<DWORD,bool>			m_monitorPorts_udp;

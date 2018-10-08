@@ -168,6 +168,14 @@ ON_WM_NCPAINT()
 	ON_BN_CLICKED(IDC_SETGAME, &CProtocolAnalysisDlg::OnBnClickedSetgame)
 	ON_COMMAND(ID_RCLIK_SAVEDATA, &CProtocolAnalysisDlg::OnRclikSavedata)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST_COM, &CProtocolAnalysisDlg::OnLvnItemchangedListCom)
+	ON_BN_CLICKED(IDC_BUTTON_SEARCH, &CProtocolAnalysisDlg::OnBnClickedButtonSearch)
+	ON_COMMAND(ID_IGNORE_DSTPORT, &CProtocolAnalysisDlg::OnIgnoreDstport)
+	ON_COMMAND(ID_IGNORE_SRCPORT, &CProtocolAnalysisDlg::OnIgnoreSrcport)
+	ON_COMMAND(ID_JUSTDSTPORT, &CProtocolAnalysisDlg::OnJustdstport)
+	ON_COMMAND(ID_JUSTSOURCEPORT, &CProtocolAnalysisDlg::OnJustsourceport)
+	ON_BN_CLICKED(IDC_BUTTON_RESTJUST, &CProtocolAnalysisDlg::OnBnClickedButtonRestjust)
+	ON_WM_HOTKEY()
+	ON_WM_KEYDOWN()
 END_MESSAGE_MAP()
 // CProtocolAnalysisDlg message handlers
 
@@ -296,7 +304,7 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	unsigned int dwThread = 0;
 	HANDLE hth1 = (HANDLE)_beginthreadex(NULL,0, ThreadStaticEntryPoint,this,CREATE_SUSPENDED,&dwThread);
 	ResumeThread(hth1);
-
+	RegisterHotKey(GetSafeHwnd(), 1101, MOD_CONTROL,'f');
 	CDialog::OnInitDialog();
 	AfxGetMainWnd()->CenterWindow(); 
 	SetProp(m_hWnd, g_lwtProgramName, g_ProgramValue);
@@ -761,6 +769,158 @@ UINT ThreadReadFile(LPVOID pParam)//读取文件线程
 	return 0;
 }
 
+int FindData(LPBYTE pData, int nDataSize, LPBYTE pFind, int nFindSize, vector<int>& posArr)
+{
+	int nFindIdx = -1;
+	for (int i = 0; i <= nDataSize - nFindSize; i++)
+	{
+		if(memcmp(&pData[i], pFind, nFindSize) == 0)
+		{
+			nFindIdx = i;
+			posArr.push_back(i);
+			i += nFindSize;
+		}
+	}
+	return posArr.size();
+}
+
+void CProtocolAnalysisDlg::ActiveItem(CListCtrl* plc, int nItem)
+{
+	plc->EnsureVisible(nItem, true);
+	plc->SetItemState(nItem,LVNI_FOCUSED|LVNI_SELECTED, LVNI_FOCUSED|LVNI_SELECTED);
+}
+
+bool CProtocolAnalysisDlg::MakeSearch(CString sCode, int nFlag, void * & pBuff, int & nBufLen)
+{
+	int nSize = 0;
+	void * pFind = NULL;
+
+	switch(nFlag)
+	{
+	case 1://num
+		{
+			pFind = new int;
+			*(int*)pFind = atoi((LPCTSTR)sCode);
+			nSize = sizeof(int);
+		}
+		break;
+	case 2://string
+		{
+			nSize = strlen((LPCTSTR)sCode);
+			pFind = new char[nSize + 1];		
+			strcpy((char*)pFind, (LPCTSTR)sCode);		
+		}
+		break;
+	case 3://bin
+		{
+			int len = sCode.GetLength();
+			if ((len % 2) != 0)
+			{
+			 	m_searchDlg.CancelRealtimeMonitor();
+				MessageBox("输入位数不正确，请确认", "提示");
+			}
+			else
+			{
+				nSize = len / 2;
+				pFind = new BYTE[len];
+				for (int i =0; i < nSize; i++)
+				{
+					CString sOne = "0x";
+					sOne = sOne + sCode.Mid(i*2, 2);
+					int nValue = 0;
+					sscanf((LPCTSTR)sOne, "%x", &nValue);
+					((BYTE*)pFind)[i] = (BYTE)nValue;
+				}
+			}
+		}
+		break;
+	}
+
+	if (pFind)
+	{
+		pBuff = pFind;
+		nBufLen = nSize;
+		return true;
+	}
+
+	return false;
+}
+
+int CProtocolAnalysisDlg::DoSearch(CString sCode, int nFlag)
+{
+	int nSize = 0;
+	void * pFind = NULL;
+	MakeSearch(sCode, nFlag, pFind, nSize);
+	
+	m_iterFindIdx = 0;
+	m_findList.clear();
+	if (pFind)
+	{
+		int nitemcnt = m_list_common.GetItemCount();
+		for (int i = 0 ; i < nitemcnt; i++)
+		{
+			RAW_PACKET* pRawPacket = (RAW_PACKET*)m_list_common.GetItemData(i);
+			if (pRawPacket)
+			{
+				vector<int> fdArr;
+				FindData(pRawPacket->pPktData, pRawPacket->PktHeader.len, (LPBYTE)pFind, nSize, fdArr);
+				for (int j = 0; j < fdArr.size(); j++)
+				{
+					sFindInfo fi;
+					fi.iItem = i;
+					fi.iPos = j;
+					m_findList.push_back(fi);
+				}
+			}
+		}
+
+		if (m_findList.size())
+		{
+			ActiveItem(&m_list_common, m_findList.front().iItem);
+		}
+		else
+		{
+			AfxMessageBox("未找到");
+		}
+
+		delete [] pFind;	
+	}
+
+	return m_findList.size();
+}
+
+int CProtocolAnalysisDlg::DoSearchNext(bool bPre)
+{
+	if (bPre)
+	{
+		if (m_iterFindIdx == 0)
+		{
+			m_iterFindIdx = m_findList.size();
+		}
+		m_iterFindIdx--;
+
+	}
+	else
+	{
+		m_iterFindIdx++;
+		if (m_iterFindIdx == m_findList.size())
+		{
+			m_iterFindIdx = 0;
+		}	
+	}
+	int idx = 0;
+	for(auto iter = m_findList.begin(); iter != m_findList.end(); iter++)
+	{
+		if (idx == m_iterFindIdx)
+		{
+			ActiveItem(&m_list_common, iter->iItem);
+			break;
+		}
+		idx++;
+	}
+	return m_iterFindIdx;
+}
+
 void CProtocolAnalysisDlg::OnRecvMsg(char * pbuf, int nsize)
 {
 	MsgInfo * pmi = (MsgInfo *)pbuf;
@@ -785,6 +945,10 @@ void CProtocolAnalysisDlg::OnRecvMsg(char * pbuf, int nsize)
 	PostMessage(WM_MY_MESSAGE_COMMON,0, (LPARAM)pRawPacket);
 }
 
+map<CString, CString> szTimeMap;
+map<string, int> szMap;
+CString sShow;
+
 LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 {
 	PacketInformation * pi = NULL;
@@ -795,7 +959,7 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	}
 
 	int nsize = 100;
-	char sText[200] = {0};
+	char sText[500] = {0};
 
 	if (strcmp(pi->SourcePort, "") == 0)
 	{
@@ -895,6 +1059,28 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 		}
 	}
 
+	CString sSc;
+	int nSf = 0;
+	if (m_searchDlg.GetMonitorInfo(sSc, nSf))
+	{
+		vector<int> fdArr;
+
+		int nSize = 0;
+		void * pFind = NULL;
+		MakeSearch(sSc, nSf, pFind, nSize);
+		if (pFind)
+		{
+			FindData(prp->pPktData, prp->PktHeader.len, (LPBYTE)pFind, nSize, fdArr);
+			delete [] pFind;
+			if (fdArr.size() == 0)
+			{
+				delete prp->pPacketInfo;
+				prp->pPacketInfo = NULL;
+				return 0;
+			}
+		}
+	}
+
 	char str[10]; 
 	sprintf(str, "%d", m_nPacket);
 	int nIdx = m_list_common.GetItemCount();
@@ -920,13 +1106,52 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 
 	sprintf(str, "0x%x", nsize);
 	m_list_common.SetItemText(nIdx, 9, str);
-	m_list_common.SetItemText(nIdx, 10, sText);
+
+// 	if (nsize == 0x38)
+// 	{
+// 		char sItem13[500] = {0};
+// 		sprintf(sItem13, "*****%s", sText);
+// 		m_list_common.SetItemText(nIdx, 10, sItem13);
+// 	}
+// 	else
+// 	{
+// 		m_list_common.DeleteItem(nIdx);
+// 		if (prp->pPacketInfo)
+// 		{	
+// 			delete prp->pPacketInfo;
+// 			prp->pPacketInfo = NULL;
+// 		}
+// 		return 0;
+// 		//m_list_common.SetItemText(nIdx, 10, sText);
+// 	}
+
+
+	{
+		char strText[100] = {0};
+		sprintf(strText, "%s-%d", pi->DestinationPort, nsize);
+		string sKey = strText;
+		szMap[sKey]++;
+
+		CString ssKey;
+		ssKey.Format("%s-%d",sKey.c_str(), szMap[sKey]);
+		szTimeMap[ssKey] = COleDateTime::GetCurrentTime().Format("%H:%M:%S");
+
+		sShow = "";
+		for (auto iter = szMap.begin(); iter != szMap.end(); iter++)
+		{
+			CString sItem;
+			sItem.Format("%s:%d ", iter->first.c_str(), iter->second);
+			sShow += sItem;
+		}
+		AfxGetMainWnd()->PostMessage(WM_SETTEXT, 0, (LPARAM)(LPCTSTR)sShow);
+	}
 
 	if (prp->pPacketInfo)
 	{	
 		delete prp->pPacketInfo;
 		prp->pPacketInfo = NULL;
 	}
+
 
 	UpdateData(FALSE);
 	PacketNumber.count = m_nPacket+1;
@@ -1486,6 +1711,21 @@ void CProtocolAnalysisDlg::OnRButtonUp(UINT nFlags, CPoint point)
 	CDialog::OnRButtonUp(nFlags, point);
 }
 
+BOOL CProtocolAnalysisDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		if(::GetKeyState(VK_CONTROL) < 0)
+		{
+			if (pMsg->wParam == 'f' || pMsg->wParam == 'F')
+			{
+				OnBnClickedButtonSearch();
+			}
+		}
+	}
+	return __super::PreTranslateMessage(pMsg);
+}
+
 LRESULT CProtocolAnalysisDlg::DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
 	// TODO: Add your specialized code here and/or call the base class
@@ -1503,6 +1743,17 @@ LRESULT CProtocolAnalysisDlg::DefWindowProc(UINT message, WPARAM wParam, LPARAM 
 			DrawTitleBar(pWinDC);
 		ReleaseDC(pWinDC);
 	}
+// 	else
+// 	if (message == WM_KEYDOWN)
+// 	{
+// 		if(::GetKeyState(VK_CONTROL) < 0)
+// 		{
+// 			if (wParam == 'f' || wParam == 'F')
+// 			{
+// 				OnBnClickedButtonSearch();
+// 			}
+// 		}
+// 	}
 	return lrst;
 }
 
@@ -2140,6 +2391,8 @@ void CProtocolAnalysisDlg::ReleaseAll()
 
 void CProtocolAnalysisDlg::OnBtclear() 
 {
+	szTimeMap.clear();
+	szMap.clear();
 	// TODO: Add your control notification handler code here
 	ReleaseAll();
 	m_list_common.DeleteAllItems();
@@ -2158,6 +2411,8 @@ void CProtocolAnalysisDlg::OnBtclear()
 	CStatic *p=(CStatic *)GetDlgItem(IDC_STATIC_PACKET_COUNT);
 	p->SetWindowText (_T("数据包个数: 0"));
 	UpdateWindow();
+
+	
 }
 
 void CProtocolAnalysisDlg::OnRestart() 
@@ -2382,6 +2637,131 @@ void CProtocolAnalysisDlg::OnIgnoreDestIp()
 		}	
 	}
 }
+
+void CProtocolAnalysisDlg::OnIgnoreDstport()
+{
+	// TODO: Add your command handler code here
+
+	for (POSITION pos = m_pCurrentList->GetFirstSelectedItemPosition(); pos != NULL; )
+	{
+		int nidx = m_pCurrentList->GetNextSelectedItem(pos);
+		TCHAR sBuf[MAX_PATH] = {0};
+		m_pCurrentList->GetItemText(nidx,7,sBuf, MAX_PATH);	//5是源端口
+		CMyAnalysiser::GetInstance()->AddToIgnoreDestPort(sBuf);
+	}
+
+	int nCnt = m_pCurrentList->GetItemCount();
+	for (int i= nCnt - 1; i >=0 ; i--)
+	{
+		TCHAR sBuf[MAX_PATH] = {0};
+		m_pCurrentList->GetItemText(i,7,sBuf, MAX_PATH);
+		if (CMyAnalysiser::GetInstance()->IsDstPortInIgnore(sBuf))
+		{
+			RAW_PACKET *p =(RAW_PACKET*)(m_pCurrentList->GetItemData(i));
+			if (p)
+			{
+				delete [](p->pPktData);//释放申请的内存
+				delete p;
+				p=NULL;
+			}
+			m_pCurrentList->DeleteItem(i);
+		}	
+	}
+}
+
+
+void CProtocolAnalysisDlg::OnIgnoreSrcport()
+{
+	// TODO: Add your command handler code here
+	for (POSITION pos = m_pCurrentList->GetFirstSelectedItemPosition(); pos != NULL; )
+	{
+		int nidx = m_pCurrentList->GetNextSelectedItem(pos);
+		TCHAR sBuf[MAX_PATH] = {0};
+		m_pCurrentList->GetItemText(nidx,5,sBuf, MAX_PATH);	//5是源端口
+		CMyAnalysiser::GetInstance()->AddToIgnoreSrcPort(sBuf);
+	}
+
+	int nCnt = m_pCurrentList->GetItemCount();
+	for (int i= nCnt - 1; i >=0 ; i--)
+	{
+		TCHAR sBuf[MAX_PATH] = {0};
+		m_pCurrentList->GetItemText(i,5,sBuf, MAX_PATH);
+		if (CMyAnalysiser::GetInstance()->IsSrcPortInIgnore(sBuf))
+		{
+			RAW_PACKET *p =(RAW_PACKET*)(m_pCurrentList->GetItemData(i));
+			if (p)
+			{
+				delete [](p->pPktData);//释放申请的内存
+				delete p;
+				p=NULL;
+			}
+			m_pCurrentList->DeleteItem(i);
+		}	
+	}
+}
+
+
+void CProtocolAnalysisDlg::OnJustdstport()
+{
+	// TODO: Add your command handler code here
+	for (POSITION pos = m_pCurrentList->GetFirstSelectedItemPosition(); pos != NULL; )
+	{
+		int nidx = m_pCurrentList->GetNextSelectedItem(pos);
+		TCHAR sBuf[MAX_PATH] = {0};
+		m_pCurrentList->GetItemText(nidx,7,sBuf, MAX_PATH);	//5是源端口
+		CMyAnalysiser::GetInstance()->AddToShowOnlyDestPort(sBuf);
+	}
+
+	int nCnt = m_pCurrentList->GetItemCount();
+	for (int i= nCnt - 1; i >=0 ; i--)
+	{
+		TCHAR sBuf[MAX_PATH] = {0};
+		m_pCurrentList->GetItemText(i,7,sBuf, MAX_PATH);
+		if (!CMyAnalysiser::GetInstance()->IsDstPortInJustView(sBuf))
+		{
+			RAW_PACKET *p =(RAW_PACKET*)(m_pCurrentList->GetItemData(i));
+			if (p)
+			{
+				delete [](p->pPktData);//释放申请的内存
+				delete p;
+				p=NULL;
+			}
+			m_pCurrentList->DeleteItem(i);
+		}	
+	}
+}
+
+
+void CProtocolAnalysisDlg::OnJustsourceport()
+{
+	// TODO: Add your command handler code here
+	for (POSITION pos = m_pCurrentList->GetFirstSelectedItemPosition(); pos != NULL; )
+	{
+		int nidx = m_pCurrentList->GetNextSelectedItem(pos);
+		TCHAR sBuf[MAX_PATH] = {0};
+		m_pCurrentList->GetItemText(nidx,5,sBuf, MAX_PATH);	//5是源端口
+		CMyAnalysiser::GetInstance()->AddToShowOnlySrcPort(sBuf);
+	}
+
+	int nCnt = m_pCurrentList->GetItemCount();
+	for (int i= nCnt - 1; i >=0 ; i--)
+	{
+		TCHAR sBuf[MAX_PATH] = {0};
+		m_pCurrentList->GetItemText(i,5,sBuf, MAX_PATH);
+		if (!CMyAnalysiser::GetInstance()->IsSrcPortInJustView(sBuf))
+		{
+			RAW_PACKET *p =(RAW_PACKET*)(m_pCurrentList->GetItemData(i));
+			if (p)
+			{
+				delete [](p->pPktData);//释放申请的内存
+				delete p;
+				p=NULL;
+			}
+			m_pCurrentList->DeleteItem(i);
+		}	
+	}
+}
+
 
 void CProtocolAnalysisDlg::OnRclickListCom(NMHDR* pNMHDR, LRESULT* pResult) 
 {
@@ -2772,4 +3152,54 @@ void CProtocolAnalysisDlg::OnLvnItemchangedListCom(NMHDR *pNMHDR, LRESULT *pResu
 
 
 
+}
+
+
+void CProtocolAnalysisDlg::OnBnClickedButtonSearch()
+{
+	// TODO: Add your control notification handler code here
+	if(m_searchDlg.GetSafeHwnd())
+	{
+		m_searchDlg.ShowWindow(SW_SHOW);
+	}
+	else
+	{
+		m_searchDlg.DoCreate(this, this);
+		m_searchDlg.CenterWindow(this);
+	}
+}
+
+
+
+
+void CProtocolAnalysisDlg::OnBnClickedButtonRestjust()
+{
+	// TODO: Add your control notification handler code here
+	CMyAnalysiser::GetInstance()->ResetJustShow();
+}
+
+
+void CProtocolAnalysisDlg::OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2)
+{
+	// TODO: Add your message handler code here and/or call default
+	if (nHotKeyId == 1101)
+	{
+		 OnBnClickedButtonSearch();
+	}
+
+	__super::OnHotKey(nHotKeyId, nKey1, nKey2);
+}
+
+
+void CProtocolAnalysisDlg::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	// TODO: Add your message handler code here and/or call default
+	if (nChar == 'f' || nChar == 'F')
+	{
+		 if((::GetKeyState(VK_CONTROL) < 0) )
+		 {
+			 OnBnClickedButtonSearch();
+		 }
+	}
+	__super::OnKeyDown(nChar, nRepCnt, nFlags);
 }

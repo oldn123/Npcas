@@ -69,20 +69,24 @@
 #define IDI_ICON_SKIN                   295
 #define IDR_MENU4                       296
 #define IDD_DIALOG_SAVEDATA             298
+#define IDD_DIALOG_SEARCH               299
 #define IDC_EDIT_FILTER                 1000
 #define IDC_EDIT_RED                    1000
 #define IDC_EDIT_RULE_NAME              1000
 #define IDC_BUTTON1                     1001
 #define IDC_BTCLEAR                     1001
 #define IDC_BT_HELP                     1001
+#define IDC_BUTTON_PRE                  1001
 #define IDC_EDIT2                       1002
 #define IDC_EDIT_GREEN                  1002
 #define IDC_EDIT_RULE_PROTOCOL          1002
 #define IDC_EDIT_OFFSET                 1002
+#define IDC_EDIT_TEXT                   1002
 #define IDC_BUTTON_DELETE_RULE          1003
 #define IDC_BUTTON_PARAMETER            1003
 #define IDC_EDIT_OFFSET2                1003
 #define IDC_EDIT_LEN                    1003
+#define IDC_BUTTON_NEXT                 1003
 #define IDC_LIST1                       1005
 #define IDC_LIST_INTRUSION_RULE         1005
 #define IDC_LIST_DEVICE                 1005
@@ -160,8 +164,14 @@
 #define IDC_CHECK_TCP                   1078
 #define IDC_BUTTON2                     1079
 #define IDC_SETGAME                     1079
-#define IDC_CHECK1                      1080
 #define IDC_CHECK_UNION                 1080
+#define IDC_BUTTON_SEARCH               1081
+#define IDC_RADIO_NUM                   1082
+#define IDC_BUTTON_RESTJUST             1082
+#define IDC_RADIO_STRING                1083
+#define IDC_RADIO_BIN                   1084
+#define IDC_CHECK_RUNTIMEMONITOR        1086
+#define IDC_COMBO1                      1087
 #define ID_HARIKRISHNA                  32771
 #define MENU_START                      32771
 #define MENU_STOP                       32772
@@ -225,14 +235,22 @@
 #define ID_IGNORE_SRCIP                 32844
 #define ID_RCLIK_32845                  32845
 #define ID_RCLIK_SAVEDATA               32846
+#define ID_RCLIK_32847                  32847
+#define ID_RCLIK_32848                  32848
+#define ID_RCLIK_32849                  32849
+#define ID_RCLIK_32850                  32850
+#define ID_IGNORE_DSTPORT               32851
+#define ID_IGNORE_SRCPORT               32852
+#define ID_JUSTDSTPORT                  32853
+#define ID_JUSTSOURCEPORT               32854
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        299
-#define _APS_NEXT_COMMAND_VALUE         32847
-#define _APS_NEXT_CONTROL_VALUE         1081
+#define _APS_NEXT_RESOURCE_VALUE        300
+#define _APS_NEXT_COMMAND_VALUE         32855
+#define _APS_NEXT_CONTROL_VALUE         1088
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

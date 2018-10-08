@@ -60,12 +60,38 @@ bool CMyAnalysiser::OnPackageCome(int nPackageType, PacketInformation* pi, RAW_P
 		return false;
 	}
 
+	if (m_justViewSrcPort.size())
+	{
+		if (!IsSrcPortInJustView(pi->SourcePort))
+		{
+			return false;
+		}
+	}
+
+	if (m_justViewDstPort.size())
+	{
+		if (!IsDstPortInJustView(pi->DestinationPort))
+		{
+			return false;
+		}
+	}
+
 	if (IsDstIpInIgnore(pi->DestinationAddr))
 	{
 		return false;
 	}
 
 	if (IsSrcIpInIgnore(pi->SourceAddr))
+	{
+		return false;
+	}
+
+	if (IsDstPortInIgnore(pi->DestinationPort))
+	{
+		return false;
+	}
+
+	if (IsSrcPortInIgnore(pi->SourcePort))
 	{
 		return false;
 	}
@@ -452,6 +478,42 @@ void CMyAnalysiser::AddToIgnoreDestIp(const char * ip)
 	m_ignoreDestIp.insert(ip);
 }
 
+bool CMyAnalysiser::IsSrcPortInJustView(const char * nPort)
+{
+	if (m_justViewSrcPort.count(nPort))
+	{
+		return true;
+	}
+	return false;
+}
+
+bool CMyAnalysiser::IsDstPortInJustView(const char * nPort)
+{
+	if (m_justViewDstPort.count(nPort))
+	{
+		return true;
+	}
+	return false;
+}
+
+bool CMyAnalysiser::IsSrcPortInIgnore(const char * nPort)
+{
+	if (m_ignoreSrcPort.count(nPort))
+	{
+		return true;
+	}
+	return false;
+}
+
+bool CMyAnalysiser::IsDstPortInIgnore(const char * nPort)
+{
+	if (m_ignoreDestPort.count(nPort))
+	{
+		return true;
+	}
+	return false;
+}
+
 bool CMyAnalysiser::IsSrcIpInIgnore(const char * ip)
 {
 	if (m_ignoreSrcIp.count(ip))
@@ -464,4 +526,30 @@ bool CMyAnalysiser::IsSrcIpInIgnore(const char * ip)
 void CMyAnalysiser::AddToIgnoreSrcIp( const char * ip )
 {
 	m_ignoreSrcIp.insert(ip);
+}
+
+void CMyAnalysiser::AddToIgnoreSrcPort(const char * nPort)
+{
+	m_ignoreSrcPort.insert(nPort);
+}
+
+void CMyAnalysiser::AddToIgnoreDestPort(const char * nPort)
+{
+	m_ignoreDestPort.insert(nPort);
+}
+
+void CMyAnalysiser::ResetJustShow()
+{
+	m_justViewSrcPort.clear();
+	m_justViewDstPort.clear();
+}
+
+void CMyAnalysiser::AddToShowOnlySrcPort(const char * nPort)
+{
+	m_justViewSrcPort.insert(nPort);
+}
+
+void CMyAnalysiser::AddToShowOnlyDestPort(const char * nPort)
+{
+	m_justViewDstPort.insert(nPort);
 }

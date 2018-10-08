@@ -11,17 +11,27 @@
 #include "stdafx.h"
 #include "resource.h"
 #include "sniffer.h"
+#include "searchDlg.h"
 #include "pcap.h"
 #include <set>
 #include <map>
+#include <list>
 using namespace std;
-class CProtocolAnalysisDlg : public CDialog
+class CProtocolAnalysisDlg : public CDialog, CSearchInterface
 {
+	struct sFindInfo
+	{
+		int iItem;
+		int iPos;
+	};
 	
 	// Construction
 public:
+	void ActiveItem(CListCtrl* , int);
 	void OnRecvMsg(char * pbuf, int nsize);
-
+	bool MakeSearch(CString sCode, int nFlag, void* & pBuff, int & nBufLen);
+	virtual int DoSearch(CString sCode, int nFlag);
+	virtual int DoSearchNext(bool bPre);
 	void ShowPacketInfo(RAW_PACKET* pRawPacket);//显示包信息
 	bool m_SaveDumpFile;// 是否保存捕获到数据包的堆文件
 	CString m_strfileNamePath; // 需要保存的文件路径(包括文件名)
@@ -53,6 +63,10 @@ public:
 	CListCtrl	m_list_arp;
 	CTabCtrl	m_tab1;
 	CListCtrl	m_list_common;
+
+	int	m_iterFindIdx;
+	std::list<sFindInfo>	m_findList;
+	CSearchDlg  m_searchDlg;
 	//}}AFX_DATA
 	map<CButton*, int> m_checkboxSet;
 	// ClassWizard generated virtual function overrides
@@ -63,6 +77,7 @@ protected:
 	void	ResetPorts(map<DWORD,bool> & );
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 	virtual LRESULT DefWindowProc(UINT message, WPARAM wParam, LPARAM lParam);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	//}}AFX_VIRTUAL
 	
 	// Implementation
@@ -184,6 +199,14 @@ public:
 	afx_msg void OnBnClickedSetgame();
 	afx_msg void OnRclikSavedata();
 	afx_msg void OnLvnItemchangedListCom(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedButtonSearch();
+	afx_msg void OnIgnoreDstport();
+	afx_msg void OnIgnoreSrcport();
+	afx_msg void OnJustdstport();
+	afx_msg void OnJustsourceport();
+	afx_msg void OnBnClickedButtonRestjust();
+	afx_msg void OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2);
+	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 };
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
