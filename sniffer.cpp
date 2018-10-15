@@ -23,7 +23,7 @@ void ProcessProtocolPacket(unsigned char* user, const struct pcap_pkthdr* h,
 	pRawPacket->ip_seq =0;//包序号为初始为 0
 	pRawPacket->tcpOrUdp_seq =0;
 	pRawPacket->nDataOffset = 0;
-
+	memset(pRawPacket->sUser, 0, 10);
 	memcpy(&pRawPacket->PktHeader, h, sizeof(pcap_pkthdr));
 	u_char* pPktData = new u_char[h->caplen];
 	memcpy(pPktData, packetdata, h->caplen);//注意此处为packetdata， 包数据
@@ -44,6 +44,7 @@ void ProcessProtocolPacketFromDumpFile(unsigned char* user, const struct pcap_pk
 	pRawPacket->pPacketInfo = NULL;
 	pRawPacket->ip_seq =0;//包序号为初始为 0
 	pRawPacket->tcpOrUdp_seq =0;
+	memset(pRawPacket->sUser, 0, 10);
 	memcpy(&pRawPacket->PktHeader, h, sizeof(pcap_pkthdr));
 	u_char* pPktData = new u_char[h->caplen];
 	memcpy(pPktData,packetdata, h->caplen);

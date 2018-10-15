@@ -53,6 +53,24 @@ BOOL CSaveDataDlg::OnInitDialog()
 	SetDlgItemText(IDC_EDIT_OFFSET, "0");
 
 	OnEnChangeEditOffset();
+
+	char sName[20] = {0};
+	for (auto iter = m_pInitData->begin(); iter != m_pInitData->end(); iter++)
+	{
+		if (strlen(sName) == 0)
+		{
+			strcpy(sName, iter->second->sUser);
+		}
+		else
+		{
+			if(strcmp(sName, iter->second->sUser) != 0)
+			{
+				strcpy(sName, "");
+				break;
+			}
+		}
+	}
+	SetDlgItemText(IDC_EDIT_NAME, sName);
 	return TRUE;
 }
 
@@ -61,6 +79,10 @@ void CSaveDataDlg::OnBnClickedOk()
 	// TODO: Add your control notification handler code here
 	char sName[50] = {0};
 	GetDlgItemText(IDC_EDIT_NAME, sName, 50);
+	if (strlen(sName) > 0)
+	{
+		strcat(sName, "_");
+	}
 
 	char sPath[200] = {0};
 	GetDlgItemText(IDC_EDIT_PATH, sPath, 200);
@@ -90,7 +112,21 @@ void CSaveDataDlg::OnBnClickedOk()
 		for (auto iter = m_pInitData->begin(); iter != m_pInitData->end(); iter++)
 		{
 			char sfile[260] = {0};
-			sprintf(sfile, "%s\\%s_%d.dat", sPath, str, iter->first);
+			if (strlen(sName) > 0)
+			{
+				sprintf(sfile, "%s\\%s%s_%d.dat", sPath, sName, str, iter->first);
+			}
+			else
+			{
+				if (iter->second->sUser[0] != 0)
+				{
+					sprintf(sfile, "%s\\%s_%s_%d.dat", sPath, iter->second->sUser, str, iter->first);
+				}
+				else
+				{
+					sprintf(sfile, "%s\\%s_%d.dat", sPath, str, iter->first);
+				}
+			}
 
 			if(!CMyAnalysiser::GetInstance()->SaveBuffer(sfile, iter->second, nOffset, nsize))
 			{

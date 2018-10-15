@@ -930,6 +930,7 @@ void CProtocolAnalysisDlg::OnRecvMsg(char * pbuf, int nsize)
 	pRawPacket->ip_seq =0;//包序号为初始为 0
 	pRawPacket->tcpOrUdp_seq =0;
 
+	memset(pRawPacket->sUser, 0, 10);
 	memset(&pRawPacket->PktHeader, 0, sizeof(pcap_pkthdr));
 
 	u_char* pPktData = new u_char[nsize];
@@ -944,6 +945,11 @@ void CProtocolAnalysisDlg::OnRecvMsg(char * pbuf, int nsize)
 void CProtocolAnalysisDlg::NoteInfo(int nIdx, LPCTSTR strText)
 {
 	m_list_common.SetItemText(nIdx, eCi_usernote, strText);
+	RAW_PACKET * pPack = (RAW_PACKET*)m_list_common.GetItemData(nIdx);
+	if (pPack)
+	{
+		strncpy(pPack->sUser, strText, 10); 
+	}
 }
 
 map<CString, CString> szTimeMap;
@@ -1724,6 +1730,10 @@ BOOL CProtocolAnalysisDlg::PreTranslateMessage(MSG* pMsg)
 					int nidx = m_pCurrentList->GetNextSelectedItem(pos);
 					NoteInfo(nidx, sBuf);
 				}
+			}
+			if (pMsg->wParam == VK_ESCAPE ||
+				pMsg->wParam == VK_RETURN)
+			{
 				return TRUE;
 			}
 		}

@@ -26,6 +26,7 @@ typedef struct
 
 	PacketInformation * pPacketInfo;
 	int nDataOffset;	//bufferœ‘ æ∆´“∆
+	char sUser[10];
 } RAW_PACKET;
 int CapturePacket();
 int DumpFileOperation();

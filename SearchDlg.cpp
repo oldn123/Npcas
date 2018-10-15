@@ -28,6 +28,8 @@ BOOL CSearchDlg::OnInitDialog()
 	CheckDlgButton(IDC_RADIO_STRING, 1);
 	m_nSearchFlg = 2;
 	m_histCombo.LoadHistory("Npcas", "SearchHist");
+
+	GetDlgItemText(IDC_EDIT_TEXT, m_sSearchCode);
 	return TRUE;
 }
 
