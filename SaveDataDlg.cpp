@@ -59,6 +59,9 @@ BOOL CSaveDataDlg::OnInitDialog()
 void CSaveDataDlg::OnBnClickedOk()
 {
 	// TODO: Add your control notification handler code here
+	char sName[50] = {0};
+	GetDlgItemText(IDC_EDIT_NAME, sName, 50);
+
 	char sPath[200] = {0};
 	GetDlgItemText(IDC_EDIT_PATH, sPath, 200);
 	int nOffset = GetDlgItemInt(IDC_EDIT_OFFSET);
@@ -75,7 +78,7 @@ void CSaveDataDlg::OnBnClickedOk()
 	{
 		auto iter = m_pInitData->begin();
 		char sfile[260] = {0};
-		sprintf(sfile, "%s\\%s_%d__.dat", sPath, str, iter->first);
+		sprintf(sfile, "%s\\%s%s_%d__.dat", sPath, sName, str, iter->first);
 
 		if(!CMyAnalysiser::GetInstance()->SaveBuffer(sfile, m_pInitData, nOffset, nsize))
 		{

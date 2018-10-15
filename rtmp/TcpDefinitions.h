@@ -29,6 +29,8 @@ typedef struct _TCP_HEADER_
 	unsigned short  urgent_pointer;    // (16 bits)
 } TCPHEADER;
 
+#define TH_LEN(th)      (((th)->info_ctrl & 0xf0) >> 4)
+
 typedef struct _ICMP_HEADER_
 {
 	unsigned char type;               // (8 bits)  

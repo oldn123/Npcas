@@ -63,7 +63,7 @@ END_MESSAGE_MAP()
 
 bool CSearchDlg::GetMonitorInfo(CString & sCode, int & nFlag)
 {
-	if (IsDlgButtonChecked(IDC_CHECK_RUNTIMEMONITOR))
+	if (GetSafeHwnd() && IsDlgButtonChecked(IDC_CHECK_RUNTIMEMONITOR))
 	{
 		if (m_sSearchCode.GetLength())
 		{

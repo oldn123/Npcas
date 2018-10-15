@@ -246,6 +246,47 @@ string Utf82Ansi(const char* srcCode)
 	return srcAnsiCode;
 }
 
+LPBYTE GetTcpData(LPBYTE pInput, int nInputLen, int noffset, int & tcplen)
+{
+	TCPHEADER * pth = (TCPHEADER * )(pInput + 0x22);
+	int nl = TH_LEN(pth) * 4;
+	
+	/* compute tcp payload (segment) size */
+	IPHEADER * pih = (IPHEADER * )(pInput + 0x0E);
+	int size_payload = ntohs (pih->length) - 0x14/*IP header*/ - nl/*tcp header*/;
+
+	LPBYTE pbuf = pInput + 0x22 + nl + noffset;
+	tcplen = size_payload - noffset;
+
+	assert(nInputLen + pInput >= pbuf);
+
+	return pbuf;
+}
+
+bool SaveBufToFile(FILE * fp, RAW_PACKET* pPacket, int noffset)
+{
+	int nsize = pPacket->PktHeader.len - noffset;
+	
+	unsigned char * pbuf = pPacket->pPktData;
+	if (IsUdpPackage(pPacket))
+	{
+		pbuf = pPacket->pPktData + 0x2A;
+		nsize = pPacket->PktHeader.len - 0x2A;
+		nsize -= noffset;
+	}
+	else if (IsTcpPackage(pPacket))
+	{
+		pbuf = GetTcpData(pPacket->pPktData, pPacket->PktHeader.len, noffset, nsize);
+	}
+	else
+	{
+		assert(0);
+	}
+	bool bok = fwrite(pbuf, 1, nsize, fp) == nsize;
+	assert(bok);
+	return bok;
+}
+
 bool CMyAnalysiser::SaveBuffer(char * sfile, map<int, RAW_PACKET* > * pPacketMap, int noffset, int ndatasize)
 {
 	auto iter = pPacketMap->begin();
@@ -253,35 +294,13 @@ bool CMyAnalysiser::SaveBuffer(char * sfile, map<int, RAW_PACKET* > * pPacketMap
 	FILE * fp = fopen(sfile, "wb");
 	if (fp)
 	{
-		int nsize = ndatasize < 0 ? pPacket->PktHeader.len - noffset: 
-			pPacket->PktHeader.len  - noffset < ndatasize ? pPacket->PktHeader.len  - noffset: ndatasize;
-
-		unsigned char * pbuf = pPacket->pPktData;
-		if (IsUdpPackage(pPacket))
-		{
-			pbuf = pPacket->pPktData + 0x2A;
-			nsize = pPacket->PktHeader.len - 0x2A;
-			nsize -= noffset;
-			nsize = ndatasize < 0 ? nsize : 
-				nsize < ndatasize ? nsize : ndatasize;
-		}
-		else if (IsTcpPackage(pPacket))
-		{
-			pbuf = pPacket->pPktData + 0x36;
-			nsize = pPacket->PktHeader.len - 0x36;
-			nsize -= noffset;
-			nsize = ndatasize < 0 ? nsize : 
-				nsize < ndatasize ? nsize : ndatasize;
-		}
-
-		fwrite(&pbuf[noffset], 1, nsize, fp);
+		SaveBufToFile(fp, pPacket, noffset);
 		iter++;
 		for (; iter != pPacketMap->end(); iter++)
 		{
-			fwrite(iter->second->pPktData, 1, iter->second->PktHeader.len, fp);
+			SaveBufToFile(fp, iter->second, 0);
 		}
 		fclose(fp);
-
 		return true;
 	}
 
@@ -293,30 +312,8 @@ bool CMyAnalysiser::SaveBuffer(char * sfile, RAW_PACKET* pPacket, int noffset, i
 	FILE * fp = fopen(sfile, "wb");
 	if (fp)
 	{
-		int nsize = ndatasize < 0 ? pPacket->PktHeader.len - noffset: 
-			pPacket->PktHeader.len  - noffset < ndatasize ? pPacket->PktHeader.len  - noffset: ndatasize;
-
-		unsigned char * pbuf = pPacket->pPktData;
-		if (IsUdpPackage(pPacket))
-		{
-			pbuf = pPacket->pPktData + 0x2A;
-			nsize = pPacket->PktHeader.len - 0x2A;
-			nsize -= noffset;
-			nsize = ndatasize < 0 ? nsize : 
-				nsize < ndatasize ? nsize : ndatasize;
-		}
-		else if (IsTcpPackage(pPacket))
-		{
-			pbuf = pPacket->pPktData + 0x36;
-			nsize = pPacket->PktHeader.len - 0x36;
-			nsize -= noffset;
-			nsize = ndatasize < 0 ? nsize : 
-				nsize < ndatasize ? nsize : ndatasize;
-		}
-		
-		fwrite(&pbuf[noffset], 1, nsize, fp);
+		SaveBufToFile(fp, pPacket, noffset);
 		fclose(fp);
-
 		return true;
 	}
 
@@ -335,8 +332,7 @@ bool CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
 	}
 	else if (IsTcpPackage(pPacket))
 	{
-		unsigned char * pbuf = pPacket->pPktData + 0x36;
-		nsize = pPacket->PktHeader.len - 0x36;
+		unsigned char * pbuf = GetTcpData(pPacket->pPktData, pPacket->PktHeader.len, 0, nsize);
 		if (nsize >= 8)
 		{
 			RtmpPacket::RtmpDataTypes rdt = OnTcp(pbuf, nsize);

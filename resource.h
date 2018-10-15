@@ -132,6 +132,7 @@
 #define IDC_EDIT_SAMPLE                 1042
 #define IDC_EDIT4                       1043
 #define IDC_EDIT_RULE_DEFINATION        1043
+#define IDC_EDIT_NAME                   1043
 #define IDC_EDIT5                       1044
 #define IDC_EDIT_RULE_RESPONSE          1044
 #define IDC_EDIT6                       1045
