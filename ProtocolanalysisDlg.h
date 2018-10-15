@@ -82,6 +82,7 @@ protected:
 	
 	// Implementation
 protected:
+	void NoteInfo(int nIdx, LPCTSTR strText);
 	void ReleaseAll();//释放申请的内存
 	void ShowIcmpInfo(int nItem);//显示 Icmp包信息
 	void ShowArpInfo(int nItem);//显示 Arp包信息

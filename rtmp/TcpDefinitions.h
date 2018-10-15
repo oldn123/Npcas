@@ -17,6 +17,9 @@ typedef struct _IP_HEADER_
 	unsigned int destination_ip; // Destination Address (32 bits)
 } IPHEADER;
 
+#define IP_HL(ip)               (((ip)->ver_ihl) & 0x0f)
+#define IP_V(ip)                (((ip)->ver_ihl) >> 4)
+
 typedef struct _TCP_HEADER_
 {
 	unsigned short  source_port;       // (16 bits)

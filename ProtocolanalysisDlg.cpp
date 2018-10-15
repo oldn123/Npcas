@@ -296,6 +296,13 @@ unsigned __stdcall ThreadStaticEntryPoint(void* pParam)
 	return 1;// the thread exit code
 }
 
+enum ColumnIdx{
+	eCi_time =	8,	// "time"
+	eCi_usernote,	// "备注"
+	eCi_dataSize,	// "size"
+	eCi_dataBuffer	// "数据区"
+};
+
 BOOL CProtocolAnalysisDlg::OnInitDialog()
 {	
 	WSADATA wsaData;
@@ -342,9 +349,10 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_list_common.InsertColumn(5, "源端口", LVCFMT_LEFT, 300, 1);
 	m_list_common.InsertColumn(6, "目的IP", LVCFMT_LEFT, 300, 1);
 	m_list_common.InsertColumn(7, "目的端口", LVCFMT_LEFT, 300, 1);
-	m_list_common.InsertColumn(8, "time", LVCFMT_RIGHT, 300, 1);
-	m_list_common.InsertColumn(9, "size", LVCFMT_RIGHT, 300, 1);
-	m_list_common.InsertColumn(10, "数据区", LVCFMT_LEFT, -1, 1);
+	m_list_common.InsertColumn(eCi_time, "time", LVCFMT_RIGHT, 300, 1);
+	m_list_common.InsertColumn(eCi_usernote, "标记", LVCFMT_CENTER, 300, 1);
+	m_list_common.InsertColumn(eCi_dataSize, "size", LVCFMT_RIGHT, 300, 1);
+	m_list_common.InsertColumn(eCi_dataBuffer, "数据区", LVCFMT_LEFT, -1, 1);
 	m_list_common.SetColumnWidth(0, 40);
 	m_list_common.SetColumnWidth(1, 120);
 	m_list_common.SetColumnWidth(2, 120);
@@ -355,6 +363,7 @@ BOOL CProtocolAnalysisDlg::OnInitDialog()
 	m_list_common.SetColumnWidth(7, 60);
 	m_list_common.SetColumnWidth(8, 60);
 	m_list_common.SetColumnWidth(9, 60);
+	m_list_common.SetColumnWidth(10, 60);
 	ListView_SetExtendedListViewStyle(m_list_common.m_hWnd,
 		LVS_EX_FULLROWSELECT |
 		LVS_EX_FLATSB |
@@ -769,20 +778,6 @@ UINT ThreadReadFile(LPVOID pParam)//读取文件线程
 	return 0;
 }
 
-int FindData(LPBYTE pData, int nDataSize, LPBYTE pFind, int nFindSize, vector<int>& posArr)
-{
-	int nFindIdx = -1;
-	for (int i = 0; i <= nDataSize - nFindSize; i++)
-	{
-		if(memcmp(&pData[i], pFind, nFindSize) == 0)
-		{
-			nFindIdx = i;
-			posArr.push_back(i);
-			i += nFindSize;
-		}
-	}
-	return posArr.size();
-}
 
 void CProtocolAnalysisDlg::ActiveItem(CListCtrl* plc, int nItem)
 {
@@ -863,7 +858,8 @@ int CProtocolAnalysisDlg::DoSearch(CString sCode, int nFlag)
 			if (pRawPacket)
 			{
 				vector<int> fdArr;
-				FindData(pRawPacket->pPktData, pRawPacket->PktHeader.len, (LPBYTE)pFind, nSize, fdArr);
+				//CMyAnalysiser::FindData(pRawPacket->pPktData, pRawPacket->PktHeader.len, (LPBYTE)pFind, nSize, fdArr);
+				CMyAnalysiser::FindData(pRawPacket,(LPBYTE)pFind, nSize, fdArr);
 				for (int j = 0; j < fdArr.size(); j++)
 				{
 					sFindInfo fi;
@@ -943,6 +939,11 @@ void CProtocolAnalysisDlg::OnRecvMsg(char * pbuf, int nsize)
 	pRawPacket->pPacketInfo = pi;
 
 	PostMessage(WM_MY_MESSAGE_COMMON,0, (LPARAM)pRawPacket);
+}
+
+void CProtocolAnalysisDlg::NoteInfo(int nIdx, LPCTSTR strText)
+{
+	m_list_common.SetItemText(nIdx, eCi_usernote, strText);
 }
 
 map<CString, CString> szTimeMap;
@@ -1070,7 +1071,8 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 		MakeSearch(sSc, nSf, pFind, nSize);
 		if (pFind)
 		{
-			FindData(prp->pPktData, prp->PktHeader.len, (LPBYTE)pFind, nSize, fdArr);
+			CMyAnalysiser::FindData(prp, (LPBYTE)pFind, nSize, fdArr);
+			//CMyAnalysiser::FindData(prp->pPktData, prp->PktHeader.len, (LPBYTE)pFind, nSize, fdArr);
 			delete [] pFind;
 			if (fdArr.size() == 0)
 			{
@@ -1097,15 +1099,16 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 	m_list_common.SetItemText(nIdx, 7, pi->DestinationPort);
 	COleDateTime dt = COleDateTime::GetCurrentTime();
 	CString sTime = dt.Format("%H:%M:%S");
-	m_list_common.SetItemText(nIdx, 8, (LPCTSTR)sTime);
+	m_list_common.SetItemText(nIdx, eCi_time, (LPCTSTR)sTime);
 
 	if (strcmp(pi->SourcePort, "") != 0)
 	{
 		CMyAnalysiser::GetInstance()->DispBuffer(prp, sText, nsize);
+		assert(nsize >= 0);
 	}
-
+	m_list_common.SetItemText(nIdx, eCi_usernote, "");
 	sprintf(str, "0x%x", nsize);
-	m_list_common.SetItemText(nIdx, 9, str);
+	m_list_common.SetItemText(nIdx, eCi_dataSize, str);
 
 // 	if (nsize == 0x38)
 // 	{
@@ -1124,27 +1127,7 @@ LRESULT CProtocolAnalysisDlg::OnPacket(WPARAM wParam, LPARAM lParam)
 // 		return 0;
 // 		//m_list_common.SetItemText(nIdx, 10, sText);
 // 	}
-
-
-	{
-		char strText[100] = {0};
-		sprintf(strText, "%s-%d", pi->DestinationPort, nsize);
-		string sKey = strText;
-		szMap[sKey]++;
-
-		CString ssKey;
-		ssKey.Format("%s-%d",sKey.c_str(), szMap[sKey]);
-		szTimeMap[ssKey] = COleDateTime::GetCurrentTime().Format("%H:%M:%S");
-
-		sShow = "";
-		for (auto iter = szMap.begin(); iter != szMap.end(); iter++)
-		{
-			CString sItem;
-			sItem.Format("%s:%d ", iter->first.c_str(), iter->second);
-			sShow += sItem;
-		}
-		AfxGetMainWnd()->PostMessage(WM_SETTEXT, 0, (LPARAM)(LPCTSTR)sShow);
-	}
+	m_list_common.SetItemText(nIdx, eCi_dataBuffer, sText);
 
 	if (prp->pPacketInfo)
 	{	
@@ -1720,6 +1703,28 @@ BOOL CProtocolAnalysisDlg::PreTranslateMessage(MSG* pMsg)
 			if (pMsg->wParam == 'f' || pMsg->wParam == 'F')
 			{
 				OnBnClickedButtonSearch();
+			}
+		}
+		else
+		{
+			if ((pMsg->wParam >= 'A' && pMsg->wParam <= 'Z')||
+				(pMsg->wParam >= 'a' && pMsg->wParam <= 'z')||
+				(pMsg->wParam >= '0' && pMsg->wParam <= '9') ||
+				pMsg->wParam == VK_SPACE ||
+				pMsg->wParam == VK_ESCAPE)
+			{
+				TCHAR sBuf[2] = {0};
+				memset(sBuf, 0, 2*sizeof(TCHAR));
+				if (pMsg->wParam != VK_ESCAPE)
+				{
+					sBuf[0] = pMsg->wParam;
+				}
+				for (POSITION pos = m_pCurrentList->GetFirstSelectedItemPosition(); pos != NULL; )
+				{
+					int nidx = m_pCurrentList->GetNextSelectedItem(pos);
+					NoteInfo(nidx, sBuf);
+				}
+				return TRUE;
 			}
 		}
 	}
@@ -3120,7 +3125,14 @@ void CProtocolAnalysisDlg::OnRclikSavedata()
 	{
 		CSaveDataDlg dlg;
 		dlg.InitData(&dataArr);
-		dlg.DoModal();
+		if(dlg.DoModal() == IDOK)
+		{
+			for (POSITION pos = m_pCurrentList->GetFirstSelectedItemPosition(); pos != NULL; )
+			{
+				int nidx = m_pCurrentList->GetNextSelectedItem(pos);
+				NoteInfo(nidx, "Saved");
+			}
+		}
 	}
 }
 

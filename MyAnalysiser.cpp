@@ -253,13 +253,18 @@ LPBYTE GetTcpData(LPBYTE pInput, int nInputLen, int noffset, int & tcplen)
 	
 	/* compute tcp payload (segment) size */
 	IPHEADER * pih = (IPHEADER * )(pInput + 0x0E);
-	int size_payload = ntohs (pih->length) - 0x14/*IP header*/ - nl/*tcp header*/;
-
+	int nIpLen = ntohs (pih->length);
 	LPBYTE pbuf = pInput + 0x22 + nl + noffset;
-	tcplen = size_payload - noffset;
+
+	if (nIpLen == 0)
+	{
+		nIpLen = nInputLen - 0x0E;
+	}
+
+	int size_payload = nIpLen - 0x14/*IP header*/ - nl/*tcp header*/;
+	tcplen = size_payload - noffset;	
 
 	assert(nInputLen + pInput >= pbuf);
-
 	return pbuf;
 }
 
@@ -394,6 +399,39 @@ bool CMyAnalysiser::DispBuffer(RAW_PACKET* pPacket, char * _pbuf, int & nsize)
 	}
 
 	return bWillbreak;
+}
+
+int CMyAnalysiser::FindData(LPBYTE pData, int nDataSize, LPBYTE pFind, int nFindSize, vector<int>& posArr)
+{
+	int nFindIdx = -1;
+	for (int i = 0; i <= nDataSize - nFindSize; i++)
+	{
+		if(memcmp(&pData[i], pFind, nFindSize) == 0)
+		{
+			nFindIdx = i;
+			posArr.push_back(i);
+			i += nFindSize;
+		}
+	}
+	return posArr.size();
+}
+
+int CMyAnalysiser::FindData(RAW_PACKET* pPacket, LPBYTE pFind, int nFindSize, vector<int>& posArr)
+{
+	u_char * pbuf = pPacket->pPktData;
+	int nsize = pPacket->PktHeader.len;
+
+	if (IsUdpPackage(pPacket))
+	{
+		pbuf = pPacket->pPktData + 0x2A;
+		nsize = pPacket->PktHeader.len - 0x2A;
+	}
+	else if (IsTcpPackage(pPacket))
+	{
+		pbuf = GetTcpData(pPacket->pPktData, pPacket->PktHeader.len, 0, nsize);
+	}
+	
+	return FindData(pbuf, nsize, pFind, nFindSize, posArr);
 }
 
 bool CMyAnalysiser::IsDstIpInIgnore(const char * ip)

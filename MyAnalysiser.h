@@ -16,6 +16,8 @@ public:
 
 	static CMyAnalysiser * GetInstance();
 	static void hextostr(char *ptr,unsigned char *buf,int len);
+	static int FindData(LPBYTE pData, int nDataSize, LPBYTE pFind, int nFindSize, vector<int>& posArr);
+	static int FindData(RAW_PACKET* pPacket, LPBYTE pFind, int nFindSize, vector<int>& posArr);
 
 public:
 	bool	OnPackageCome(int nPackageType, PacketInformation* pi, RAW_PACKET* pPacket);

@@ -8,6 +8,7 @@ int g_network_device;//选择要捕获的网卡号
 char g_network_device_name[1024][1024];//存放网络接口名字
 int g_network_device_number;
 extern char g_PacketFilter[1024];//过滤语句
+pcap_dumper_t *g_PcapFile = NULL;
 //定义回调函数类型
 typedef void (*pcap_func_t)(unsigned char*, const struct pcap_pkthdr*, const u_char*);
 /* 回调函数，当收到每一个数据包时会被libpcap所调用 */
@@ -48,7 +49,8 @@ void ProcessProtocolPacketFromDumpFile(unsigned char* user, const struct pcap_pk
 	memcpy(pPktData,packetdata, h->caplen);
 	pRawPacket->pPktData = pPktData;
 	ParseEthernet(packetdata, pRawPacket);
-}
+}	
+
 int CapturePacket()
 {
 	pcap_if_t *NetworkDevice;
@@ -61,7 +63,7 @@ int CapturePacket()
 	pcap_handler Handler;
 	bpf_u_int32 SubNet, NetMask;
 	struct bpf_program FilterCode;	
-	pcap_dumper_t *PcapFile;
+
 	strcpy(CaptureFilter, g_PacketFilter);
 	if (pcap_findalldevs(&NetworkDevice, Error) == -1)//获得主机网络设备列表
 	{
@@ -110,10 +112,14 @@ int CapturePacket()
 	CString strFilePath=g_pdlg->m_strFilePath; //路径
 	strFilePath+=_T("\\temp.pcap");
 	//打开网络数据包文件(打开堆文件) 
-	PcapFile = pcap_dump_open(PcapHandle, strFilePath);
-	if (!PcapFile)
+	
+	if (!g_PcapFile)
 	{
-		::MessageBox(g_pdlg->m_hWnd,strFilePath,_T("打开文件失败"),MB_DEFBUTTON1);
+		g_PcapFile = pcap_dump_open(PcapHandle, strFilePath);
+		if (!g_PcapFile)
+		{	
+			::MessageBox(g_pdlg->m_hWnd,strFilePath,_T("打开文件失败"),MB_DEFBUTTON1);
+		}
 	}
 	if (CaptureFilter != NULL)
 	{
@@ -150,7 +156,7 @@ int CapturePacket()
 	/* 每次捕获到数据包时，libpcap都会自动调用这个回调函数 */
 	Handler = (pcap_func_t)ProcessProtocolPacket;
 	/* 开始捕获 */
-	pcap_loop(PcapHandle, number, Handler, (unsigned char *)PcapFile);
+	pcap_loop(PcapHandle, number, Handler, (unsigned char *)g_PcapFile);
 	return 0;
 }
 //从堆文件中读取数据包,脱机文件中读取数据包
